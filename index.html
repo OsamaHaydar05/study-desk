@@ -271,11 +271,14 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
 <div id="login" class="login" hidden>
   <div class="logincard">
     <h1>Study Desk</h1>
-    <p class="muted" id="loginText">Private dashboard, linked to one KTH Canvas account. Only the owner’s email can sign in; any other address is refused.</p>
+    <p class="muted" id="loginText">Private dashboard, linked to one KTH Canvas account. Only the owner’s email can sign in; any other address is refused. You stay signed in on each device after the first time.</p>
     <form id="loginForm">
       <label for="loginEmail" class="muted" style="font-size:13px">Email</label>
-      <input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-      <button class="btn primary" type="submit" id="loginBtn">Send my login link</button>
+      <input id="loginEmail" type="email" autocomplete="username" required placeholder="you@example.com">
+      <label for="loginPass" class="muted" style="font-size:13px">Password</label>
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="Your Study Desk password">
+      <button class="btn primary" type="submit" id="loginBtn">Sign in</button>
+      <button class="btn ghost" type="button" id="linkBtn">No password yet? Email me a login link</button>
     </form>
     <div class="msg" id="loginMsg" role="status"></div>
   </div>
@@ -388,6 +391,13 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
       </div>
       <div class="sub2">Courses to show</div>
       <div class="checks" id="vis"></div>
+      <div class="sub2">Password for signing in</div>
+      <div class="form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <label>New password (8+ characters)<input id="newPass" type="password" autocomplete="new-password"></label>
+        <button class="btn small" type="button" id="savePass">Save password</button>
+      </div>
+      <div class="msg" id="passMsg" role="status"></div>
+      <p class="muted" style="font-size:13px;margin:6px 0 0">Each device stays signed in after you sign in once. Sign out is under Canvas sync.</p>
     </details>
   </div>
 
@@ -480,21 +490,45 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { showLogin(); return; }
     const { data: ok, error } = await sb.rpc('claim_owner');
-    if (error || !ok) { await sb.auth.signOut(); showLogin('This Study Desk belongs to another account. Sign in with the owner\u2019s email.'); return; }
+    if (error) { showLogin('Couldn\u2019t reach Study Desk. Check your connection; retrying…'); setTimeout(boot, 5000); return; }
+    if (!ok) { await sb.auth.signOut(); showLogin('This Study Desk belongs to another account. Sign in with the owner\u2019s email.'); return; }
     if (location.search.includes('code=')) history.replaceState(null, '', location.pathname + location.hash);
     $('login').hidden = true;
     if (!SD.signedIn) { SD.signedIn = true; resolveDb(db); watchSync(); }
   }
   sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' && !SD.signedIn) setTimeout(boot, 0); });
+  try { const saved = localStorage.getItem('sd-email'); if (saved) $('loginEmail').value = saved; } catch (err) {}
+  const remember = email => { try { localStorage.setItem('sd-email', email); } catch (err) {} };
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const email = $('loginEmail').value.trim(); const msg = $('loginMsg');
+    const email = $('loginEmail').value.trim(), password = $('loginPass').value, msg = $('loginMsg');
     if (!email) return;
-    $('loginBtn').disabled = true; msg.className = 'msg'; msg.textContent = 'Sending…';
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    if (!password) { msg.className = 'msg err'; msg.textContent = 'Type your password, or use the email link if you haven\u2019t set one yet.'; return; }
+    remember(email);
+    $('loginBtn').disabled = true; msg.className = 'msg'; msg.textContent = 'Signing in…';
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     $('loginBtn').disabled = false;
+    if (error) { msg.className = 'msg err'; msg.textContent = 'Couldn\u2019t sign in: ' + error.message + '. No password yet? Use the email link, then set one in Settings.'; return; }
+    msg.textContent = ''; $('loginPass').value = ''; boot();
+  });
+  $('linkBtn').addEventListener('click', async () => {
+    const email = $('loginEmail').value.trim(), msg = $('loginMsg');
+    if (!email) { msg.className = 'msg err'; msg.textContent = 'Type your email first.'; return; }
+    remember(email);
+    $('linkBtn').disabled = true; msg.className = 'msg'; msg.textContent = 'Sending…';
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    $('linkBtn').disabled = false;
     if (error) { msg.className = 'msg err'; msg.textContent = 'Couldn\u2019t send the link: ' + error.message; }
-    else { msg.className = 'msg good'; msg.textContent = 'Check your email and tap the link. It opens Study Desk signed in.'; }
+    else { msg.className = 'msg good'; msg.textContent = 'Check your email and tap the link. Then set a password in Settings so you can sign in on other devices without email.'; }
+  });
+  $('savePass').addEventListener('click', async () => {
+    const p1 = $('newPass').value, msg = $('passMsg');
+    if (p1.length < 8) { msg.className = 'msg err'; msg.textContent = 'Use at least 8 characters.'; return; }
+    $('savePass').disabled = true; msg.className = 'msg'; msg.textContent = 'Saving…';
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    $('savePass').disabled = false;
+    if (error) { msg.className = 'msg err'; msg.textContent = 'Couldn\u2019t save it: ' + error.message; return; }
+    $('newPass').value = ''; msg.className = 'msg good'; msg.textContent = 'Password saved. Sign in with your email and this password on your phone; it stays signed in after that.';
   });
   $('signOut').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
 
@@ -586,6 +620,7 @@ function normalize(snap) {
 function defEst(i) {
   const t = (i.title || '').toLowerCase();
   if (/komplettering/.test(t)) return 6;
+  if (i.t === 'exam') return /retake|omtenta|re-?exam/.test(t) ? 6 : 8;
   if (i.t === 'quiz') { if (/vocabulary/.test(t)) return 0.5; return (i.pts || 0) >= 15 ? 1.5 : 1; }
   if (i.t === 'discussion_topic') return /pitch/.test(t) ? 2 : 1;
   if (i.t === 'wiki_page') return 0.25;
@@ -635,9 +670,9 @@ function buildPlan(a, prefs, now, horizon = 35) {
     const dueIdx = idxOf(i.dueMs);
     const morning = Number(fHour.format(new Date(i.dueMs))) < 12;
     const last = Math.max(0, (h >= 2 || morning) ? dueIdx - 1 : dueIdx);
-    const start = Math.max(0, last - leadFor(h) + 1);
+    const start = Math.max(0, last - (i.t === 'exam' ? 10 : leadFor(h)) + 1);
     if (i.dueMs > now + horizon * DAY && start > 0) continue;
-    jobs.push({ ref: i, id: i.id, code: i.code, title: i.title, hours: h, dueMs: i.dueMs, start, last: Math.min(last, horizon - 1), dueIdx: i.dueMs > now + horizon * DAY ? null : dueIdx });
+    jobs.push({ ref: i, id: i.id, code: i.code, title: (i.t === 'exam' ? 'Study for: ' : '') + i.title, hours: h, dueMs: i.dueMs, start, last: Math.min(last, horizon - 1), dueIdx: i.dueMs > now + horizon * DAY ? null : dueIdx });
   }
   for (const e of a.extras) {
     const prep = Number(e.prep) || 0;
@@ -699,7 +734,8 @@ function doNext(a, plan, prefs, now) {
     if (b.late) { push(ref, 'Missing since ' + fDate.format(new Date(b.ref.dueMs)) + '. Submit late if allowed, or ask the teacher.', j.hours, true, 'late', j); continue; }
     const dueToday = j.dueIdx === 0;
     const multi = j.parts.length > 1;
-    let why = 'Due ' + relDue(j.dueMs, now) + ' · about ' + fmtH(j.hours);
+    const isEx = j.ref && j.ref.t === 'exam';
+    let why = isEx ? 'Test ' + noTimeText(j.ref, relDue(j.dueMs, now)) + ' · study about ' + fmtH(j.hours) + ' before it' : 'Due ' + relDue(j.dueMs, now) + ' · about ' + fmtH(j.hours);
     if (multi) why += ' · plan: ' + partsText(plan, j);
     if (j.over) why += ' · doesn’t fit your budget, find ' + fmtH(j.over) + ' extra';
     push(ref, why, j.hours, false, dueToday ? 'due' : multi && j.parts[0].d === d ? 'start' : 'next', j);
@@ -735,9 +771,11 @@ function courseStats(norm, a, prefs, now) {
   });
 }
 
+function noTimeText(i, txt) { return i && i.t === 'exam' && i.d && i.d.timeKnown === false ? txt.replace(/\s\d{2}:\d{2}.*$/, '') + ' (time not on Canvas)' : txt; }
+
 function bigItems(a, now) {
   const rx = /tentamen|exam|final|komplettering|half-term|\bks\d|\bproject\b/i;
-  const canvas = a.open.filter(i => (rx.test(i.title) || (i.t !== 'quiz' && (i.pts || 0) >= 25)) && i.dueMs < now + 90 * DAY).map(i => ({ id: i.id, code: i.code, title: i.title, dueMs: i.dueMs, url: i.url, pts: i.pts, src: 'canvas' }));
+  const canvas = a.open.filter(i => (i.t === 'exam' || rx.test(i.title) || (i.t !== 'quiz' && (i.pts || 0) >= 25)) && i.dueMs < now + 120 * DAY).map(i => ({ id: i.id, code: i.code, title: i.title, dueMs: i.dueMs, url: i.url, pts: i.pts, src: 'canvas', exam: i.t === 'exam', noTime: i.t === 'exam' && i.d && i.d.timeKnown === false }));
   const ex = a.extras.filter(e => e.dueMs >= now - DAY).map(e => ({ id: 'x:' + e.id, code: e.code, title: e.title, dueMs: e.dueMs, kind: e.kind, src: 'you' }));
   return canvas.concat(ex).sort((x, y) => x.dueMs - y.dueMs).slice(0, 8);
 }
@@ -860,6 +898,7 @@ function bigItems(a, now) {
 
   function statusPill(i) {
     const left = i.dueMs - state.now;
+    if (i.t === 'exam') return '<span class="pill ' + (left < 72 * 36e5 ? 'late' : 'soon') + '">Test ' + esc(noTimeText(i, relDue(i.dueMs, state.now)).replace(/ \(in.*?\)/, '')) + '</span>';
     if (left < 24 * 36e5) return '<span class="pill late">Due ' + esc(relDue(i.dueMs, state.now).replace(/ \(in.*\)/, '')) + '</span>';
     if (left < 72 * 36e5) return '<span class="pill soon">' + esc(relDue(i.dueMs, state.now)) + '</span>';
     return '<span class="mono muted" style="font-size:13px">' + esc(relDue(i.dueMs, state.now)) + '</span>';
@@ -869,7 +908,7 @@ function bigItems(a, now) {
     const opts = EST_OPTS.includes(v) ? EST_OPTS : EST_OPTS.concat([v]).sort((a, b) => a - b);
     return '<select class="est" data-est="' + esc(i.id) + '" aria-label="Estimated hours for ' + esc(i.title) + '">' + opts.map(o => '<option value="' + o + '"' + (o === v ? ' selected' : '') + '>' + esc(fmtShort(o)) + '</option>').join('') + '</select>';
   }
-  const typeLabel = t => ({ assignment: 'Assignment', quiz: 'Quiz', discussion_topic: 'Discussion', wiki_page: 'Page' })[t] || t;
+  const typeLabel = t => ({ assignment: 'Assignment', quiz: 'Quiz', discussion_topic: 'Discussion', wiki_page: 'Page', exam: 'Exam / test' })[t] || t;
 
   function renderUpcoming(a) {
     const until = state.now + 35 * DAY;
@@ -903,7 +942,7 @@ function bigItems(a, now) {
       const days = Math.max(0, Math.ceil((keyDate(keyOf(b.dueMs)) - keyDate(keyOf(state.now))) / DAY));
       const cls = days <= 3 ? 'hot' : days <= 10 ? 'warm' : '';
       return '<div class="cd"><div class="days ' + cls + '"><b>' + days + '</b><span>' + (days === 1 ? 'day' : 'days') + '</span></div><div style="min-width:0"><div class="ttl">' + link(b.url, b.title) + '</div>' +
-        '<div class="meta muted" style="font-size:13px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">' + chip(b.code) + '<span class="mono">' + esc(fDate.format(new Date(b.dueMs)) + ' ' + fTime.format(new Date(b.dueMs))) + '</span>' +
+        '<div class="meta muted" style="font-size:13px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">' + chip(b.code) + '<span class="mono">' + esc(fDate.format(new Date(b.dueMs)) + (b.noTime ? ' · time not on Canvas' : ' ' + fTime.format(new Date(b.dueMs)))) + (b.exam ? ' <span class="pill soon">Test</span>' : '') + '</span>' +
         (b.src === 'you' ? '<span class="pill plain">' + (b.kind === 'exam' ? 'Exam' : 'Deadline') + ', added by you</span>' : (b.pts ? '<span class="mono">' + esc(b.pts) + (b.pts === 1 ? ' pt' : ' pts') + '</span>' : '')) + '</div></div></div>';
     }).join('');
   }
@@ -1066,6 +1105,12 @@ function bigItems(a, now) {
   function factsHtml(i) {
     const d = i.d || {}; const f = [];
     f.push('<span>Type <b>' + esc(typeLabel(i.t)) + '</b></span>');
+    if (i.t === 'exam') {
+      const SRC = { page: 'a Canvas page' + (d.module ? ' (module ' + d.module + ')' : ''), calendar: 'the Canvas calendar', room: 'a KTH exam room on Canvas', announcement: 'a Canvas announcement' };
+      f.push('<span>Found in <b>' + esc(SRC[d.src] || 'Canvas') + '</b></span>');
+      f.push('<span>When <b>' + esc(fDate.format(new Date(i.dueMs)) + (d.timeKnown === false ? ', time not stated on Canvas' : ' ' + fTime.format(new Date(i.dueMs)))) + '</b></span>');
+      if (d.where) f.push('<span>Where <b>' + esc(d.where) + '</b></span>');
+    }
     if (i.pts != null) f.push('<span>Points <b>' + esc(i.pts) + '</b></span>');
     if (d.subt && d.subt.length) f.push('<span>Hand in as <b>' + esc(d.subt.map(s => SUBT[s] || s.replace(/_/g, ' ')).join(', ')) + '</b>' + (d.ext && d.ext.length ? ' (' + esc(d.ext.join(', ')) + ')' : '') + '</span>');
     if (d.qn) f.push('<span>Questions <b>' + esc(d.qn) + '</b></span>');
@@ -1117,8 +1162,8 @@ function bigItems(a, now) {
       (d && d.rub && d.rub.length ? '<div class="rubric"><table><thead><tr><th>Rubric criterion</th><th>Points</th></tr></thead><tbody>' + d.rub.map(r => '<tr><td>' + esc(r.d) + (r.l ? '<div class="muted" style="font-size:12px">' + esc(r.l) + '</div>' : '') + '</td><td class="mono">' + esc(r.p) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
       '<div class="helpbar">' +
         (avail ? '<button class="btn primary small" type="button" data-ask="explain" data-id="' + esc(i.id) + '"' + (live.busy ? ' disabled' : '') + '>Explain in detail</button>' +
-                 '<button class="btn small" type="button" data-ask="start" data-id="' + esc(i.id) + '"' + (live.busy ? ' disabled' : '') + '>' + (i.t === 'quiz' ? 'Help me prepare' : 'Help me start') + '</button>' : ('<button class="btn primary small" type="button" data-copyp="explain" data-id="' + esc(i.id) + '">Copy prompt: explain</button>' +
-      '<button class="btn small" type="button" data-copyp="start" data-id="' + esc(i.id) + '">' + (i.t === 'quiz' ? 'Copy prompt: help me prepare' : 'Copy prompt: help me start') + '</button>' +
+                 '<button class="btn small" type="button" data-ask="start" data-id="' + esc(i.id) + '"' + (live.busy ? ' disabled' : '') + '>' + (i.t === 'quiz' ? 'Help me prepare' : 'Help me start') + '</button>' : ('<button class="btn primary small" type="button" data-copyp="explain" data-id="' + esc(i.id) + '">' + (i.t === 'exam' ? 'Copy prompt: what\u2019s on the test' : 'Copy prompt: explain') + '</button>' +
+      '<button class="btn small" type="button" data-copyp="start" data-id="' + esc(i.id) + '">' + (i.t === 'exam' ? 'Copy prompt: study plan' : i.t === 'quiz' ? 'Copy prompt: help me prepare' : 'Copy prompt: help me start') + '</button>' +
       '<a class="btn small ghost" href="https://claude.ai/new" target="_blank" rel="noopener" style="text-decoration:none">Open Claude</a>')) +
       (T.copyMsg && T.copyMsg[i.id] ? '<div class="helpnote" role="status" style="width:100%">' + esc(T.copyMsg[i.id].msg) + '</div>' + (T.copyMsg[i.id].text ? '<textarea class="copyfallback" readonly aria-label="Prompt for Claude">' + esc(T.copyMsg[i.id].text) + '</textarea>' : '') : '') +
         (live.busy ? '<button class="btn small" type="button" data-stop="' + esc(i.id) + '">Stop</button>' : '') +
@@ -1158,7 +1203,7 @@ function bigItems(a, now) {
     const facts = [
       'Course: ' + i.code + ' ' + course,
       'Task: ' + i.title + ' (' + typeLabel(i.t) + ')',
-      'Due: ' + fDate.format(new Date(i.dueMs)) + ' ' + fTime.format(new Date(i.dueMs)) + ' Stockholm time' + (i.dueMs < state.now ? ' (already past, the student is late)' : ''),
+      (i.t === 'exam' ? 'Test date: ' + fDate.format(new Date(i.dueMs)) + (d.timeKnown === false ? ' (time not stated on Canvas)' : ' ' + fTime.format(new Date(i.dueMs)) + ' Stockholm time') : 'Due: ' + fDate.format(new Date(i.dueMs)) + ' ' + fTime.format(new Date(i.dueMs)) + ' Stockholm time' + (i.dueMs < state.now ? ' (already past, the student is late)' : '')),
       i.pts != null ? 'Points: ' + i.pts : '',
       d.subt ? 'Hand in as: ' + d.subt.map(s => SUBT[s] || s).join(', ') + (d.ext && d.ext.length ? ' (' + d.ext.join(', ') + ')' : '') : '',
       d.qn ? 'Quiz questions: ' + d.qn : '', d.tl ? 'Time limit: ' + d.tl + ' min' : '',
@@ -1169,17 +1214,30 @@ function bigItems(a, now) {
     const readable = fset.filter(x => x.text);
     const unread = (d.links || []).filter(l => !readable.some(x => x.n === l.t)).map(l => l.t);
     let budget = 90000;
+    let courseCtx = '';
+    if (i.t === 'exam' && norm) {
+      const others = norm.items.filter(x => x.code === i.code && x.id !== i.id && x.t !== 'announcement' && x.t !== 'wiki_page');
+      courseCtx = 'Other work in this course (title, due date, points / score):\n' + others.map(x => '- ' + x.title + ' (' + fDate.format(new Date(x.dueMs)) + (x.pts ? ', ' + (x.score != null ? x.score + '/' : '') + x.pts + ' pts' : '') + (x.s && x.s.sub ? ', submitted' : '') + ')').join('\n') + '\n\n';
+      const extra = [];
+      for (const x of others) for (const f of ((T.files[x.id] && T.files[x.id].files) || [])) if (f.text && !readable.some(r => r.n === f.n) && !extra.some(r => r.n === f.n)) extra.push({ ...f, n: f.n + ' (from ' + x.title + ')' });
+      readable.push(...extra);
+      budget = 120000;
+    }
     const attText = readable.map(x => { const t = x.text.slice(0, Math.max(0, budget)); budget -= t.length; return t ? '=== ' + x.n + (x.k === 'upload' ? ' (added by the student)' : x.k === 'page' ? ' (Canvas page)' : '') + (x.tr || t.length < x.text.length ? ' [shortened]' : '') + ' ===\n' + t : ''; }).filter(Boolean).join('\n\n');
     const desc = i.d ? (d.text || '(Canvas has no written description for this task.)') : '(The description has not been synced; only the title above is known. Say so briefly, then help as well as you can from the title and course.)';
     void desc;
-    const ask = kind === 'explain'
+    const daysLeft = Math.max(0, Math.round((keyDate(keyOf(i.dueMs)) - keyDate(keyOf(state.now))) / DAY));
+    const examAsk = kind === 'explain'
+      ? 'Explain what this test covers:\n1. Format, rules and allowed aids, exactly as stated.\n2. The scope: list every topic in the modules it covers, each with a short explanation and the key definitions, formulas or algorithms.\n3. For each part of the test (e.g. Part A/B/C), what kind of questions to expect and how to answer them well.\n4. The topics most likely to be tested, based on the course quizzes, assignments, lectures and practice material below.\n5. Common mistakes students make on these topics.'
+      : 'Make me a study plan for this test. It is in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' and I have about ' + fmtH((state.prefs.hours || 8) / 7) + ' a day, plus extra time I can find.\n1. A day-by-day plan from today until the test, naming the topics and the exact practice material to use each day (practice questions, past exams, quizzes listed below).\n2. What to put on my cheat sheet if one is allowed (an outline for one handwritten page), or what to memorise if not.\n3. Ten practice questions that mirror the test format, with short model answers.\n4. What to do the evening before and on the day.';
+    const ask = i.t === 'exam' ? examAsk : kind === 'explain'
       ? 'Explain this task to me in detail:\n1. What it asks for, in plain words.\n2. Exactly what I must hand in, and in what format.\n3. The concepts it tests, each explained briefly with a small example.\n4. How it is likely graded, and common mistakes to avoid.\n5. Anything unclear that I should check in the linked material or ask the teacher.'
       : i.t === 'quiz'
         ? 'Help me prepare for this quiz right now:\n1. The topics it most likely covers and what to review for each.\n2. The key facts, definitions and formulas to know.\n3. Five practice questions in the same style, with short answers (not the real quiz questions).\n4. A study plan that fits about ' + fmtH(est) + ' and is done before the deadline.'
         : 'Help me get started on this right now:\n1. A step-by-step plan split into work sessions that fits about ' + fmtH(est) + ' and is finished by ' + finishBy + ', saying what to do in each session.\n2. My first 45-minute session in detail: what to open or read, what to set up, and the first concrete steps.\n3. A skeleton or outline of what I hand in (structure and headings, not finished answers).\n4. A short checklist to run before submitting.';
     return 'You are a study coach helping a KTH computer engineering student (programme TIDAB). Today is ' + fDate.format(new Date(state.now)) + ', Stockholm time. ' +
       'Their target in this course is grade ' + ((state.prefs.targets || {})[i.code] || 'E') + ' on KTH’s A–F scale, and they have about ' + (state.prefs.hours || 8) + ' hours a week for study.\n\n' +
-      facts + '\n\nCanvas description (it may be in Swedish):\n"""\n' + desc + '\n"""\n\n' +
+      facts + '\n\n' + (i.t === 'exam' ? 'What Canvas says about this test (it may be in Swedish):' : 'Canvas description (it may be in Swedish):') + '\n"""\n' + desc + '\n"""\n\n' + courseCtx +
       (attText ? 'Full text of the attached files (extracted from PDF and code files, so layout and figures are lost). Treat these as the real task. Base your answer on them and refer to their exercise and question numbers:\n"""\n' + attText + '\n"""\n\n' : '') +
       (unread.length ? 'Linked but not available to you: ' + unread.join('; ') + '. If they matter, say so and suggest adding them with "Add a file for Claude".\n\n' : '') +
       ask + '\n\n' +
@@ -1241,7 +1299,11 @@ function bigItems(a, now) {
   document.addEventListener('toggle', e => {
     const d = e.target; if (!d.matches || !d.matches('details.task')) return;
     const id = d.dataset.tid; const was = T.open.has(id);
-    if (d.open) { T.open.add(id); ensureFiles(id); } else T.open.delete(id);
+    if (d.open) {
+      T.open.add(id); ensureFiles(id);
+      const it = lastNorm && lastNorm.items.find(x => x.id === id);
+      if (it && it.t === 'exam') lastNorm.items.filter(x => x.code === it.code && x.id !== id && x.attn && x.attn.length).slice(0, 10).forEach(x => ensureFiles(x.id));
+    } else T.open.delete(id);
     if (was !== d.open && lastNorm) renderTasks(lastNorm, true);
   }, true);
   document.addEventListener('click', e => {
