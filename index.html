@@ -1,0 +1,1403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EEF1F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D131C" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex">
+<title>Study Desk HT26</title>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a planner desk. Summary strip on top, then a wide "work" column (do next, week plan, upcoming)
+   beside a narrow "watch" column (catch up, exams, courses, notices). Stacks to one column on phones. */
+:root {
+  --bg: #EEF1F5;
+  --surface: #FFFFFF;
+  --sunk: #F5F7FA;
+  --ink: #142033;
+  --muted: #5A6577;
+  --line: #D9DFE8;
+  --accent: #2155C4;
+  --accent-ink: #FFFFFF;
+  --late: #B9312A;  --late-bg: #FBE9E7;
+  --soon: #9A5B00;  --soon-bg: #FDF1DC;
+  --ok: #24764A;    --ok-bg: #E3F3EA;
+  --c1: #2155C4; --c2: #8A3FA8; --c3: #0D8277; --c4: #B8541C; --c5: #5C6E10; --c6: #B02F68;
+  --f-display: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D131C; --surface: #151D29; --sunk: #111823; --ink: #E4E9F1; --muted: #93A0B3; --line: #263244;
+    --accent: #7EA4FF; --accent-ink: #0D131C;
+    --late: #FF8075; --late-bg: #3A1C1B; --soon: #F0B45A; --soon-bg: #37290F; --ok: #6FCB95; --ok-bg: #16301F;
+    --c1: #7EA4FF; --c2: #C88BE0; --c3: #4CC7B9; --c4: #F0975F; --c5: #B4C95A; --c6: #F07AAE;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D131C; --surface: #151D29; --sunk: #111823; --ink: #E4E9F1; --muted: #93A0B3; --line: #263244;
+  --accent: #7EA4FF; --accent-ink: #0D131C;
+  --late: #FF8075; --late-bg: #3A1C1B; --soon: #F0B45A; --soon-bg: #37290F; --ok: #6FCB95; --ok-bg: #16301F;
+  --c1: #7EA4FF; --c2: #C88BE0; --c3: #4CC7B9; --c4: #F0975F; --c5: #B4C95A; --c6: #F07AAE;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+a { color: inherit; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 2px; }
+a:hover { text-decoration-color: currentColor; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.mono { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+
+/* Header */
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.brand h1 { font-size: clamp(26px, 4vw, 34px); font-weight: 800; letter-spacing: -.02em; }
+.brand .when { font-family: var(--f-data); font-size: 13px; color: var(--muted); margin-top: 4px; }
+.brand .when b { color: var(--ink); font-weight: 600; }
+.syncbox { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.stamp { font-size: 13px; color: var(--muted); }
+.stamp.stale { color: var(--soon); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.small { padding: 4px 9px; font-size: 13px; }
+.btn.ghost { background: transparent; }
+
+/* Summary strip */
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin-bottom: 22px; }
+.strip > div { background: var(--surface); padding: 12px 16px; min-width: 0; }
+.strip .n { font-family: var(--f-data); font-size: 26px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.strip .l { font-size: 13px; color: var(--muted); }
+.strip .late .n { color: var(--late); }
+.strip .soon .n { color: var(--soon); }
+@media (max-width: 640px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Main grid */
+.grid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 920px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.panel > header .aside { font-size: 13px; color: var(--muted); }
+
+/* Course chip */
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-data); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chip::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--cc, var(--muted)); flex: none; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.late { color: var(--late); background: var(--late-bg); }
+.pill.soon { color: var(--soon); background: var(--soon-bg); }
+.pill.ok { color: var(--ok); background: var(--ok-bg); }
+.pill.plain { color: var(--muted); background: var(--sunk); }
+
+/* Do next */
+.next { display: grid; gap: 10px; }
+.next .card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; padding: 12px 14px; border-radius: 8px; background: var(--sunk); border-left: 4px solid var(--cc, var(--accent)); }
+.next .rank { font-family: var(--f-data); font-size: 20px; font-weight: 600; color: var(--muted); grid-row: span 2; }
+.next .t { font-weight: 700; font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+.next .why { font-size: 13px; color: var(--muted); grid-column: 2; }
+.next .act { grid-row: span 2; display: flex; gap: 6px; }
+.next .card.first { background: color-mix(in srgb, var(--cc, var(--accent)) 10%, var(--surface)); }
+@media (max-width: 520px) { .next .card { grid-template-columns: auto minmax(0, 1fr); } .next .act { grid-row: auto; grid-column: 2; } }
+
+/* Week plan */
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.day { background: var(--sunk); border-radius: 8px; padding: 8px; min-width: 0; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+.day.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.day .dh { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; }
+.day .dh b { font-size: 13px; }
+.load { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.load i { display: block; height: 100%; background: var(--ok); }
+.load.full i { background: var(--soon); }
+.load.over i { background: var(--late); }
+.blk { font-size: 12px; line-height: 1.3; padding: 5px 6px; border-radius: 5px; background: var(--surface); border-left: 3px solid var(--cc, var(--muted)); overflow-wrap: anywhere; }
+.blk .h { font-family: var(--f-data); color: var(--muted); display: block; margin-top: 2px; }
+.blk.over { box-shadow: inset 0 0 0 1px var(--late); }
+.blk.due { font-weight: 700; }
+.day .blks { display: flex; flex-direction: column; gap: 6px; }
+.day .free { font-size: 12px; color: var(--muted); }
+@media (max-width: 760px) {
+  .week { grid-template-columns: minmax(0, 1fr); }
+  .day { min-height: 0; }
+  .day .blks { flex-direction: row; flex-wrap: wrap; }
+}
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+/* Lists */
+.list { display: flex; flex-direction: column; }
+.wk { font-family: var(--f-data); font-size: 12px; color: var(--muted); padding: 10px 0 4px; border-bottom: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row .main { min-width: 0; }
+.row .ttl { font-weight: 600; overflow-wrap: anywhere; }
+.row .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); margin-top: 2px; align-items: center; }
+.row .right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.row.isdone .ttl { text-decoration: line-through; color: var(--muted); }
+.row input[type=checkbox] { width: 17px; height: 17px; margin-top: 3px; accent-color: var(--accent); }
+select.est { font-size: 12px; font-family: var(--f-data); padding: 1px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+
+/* Catch up */
+.catch .row { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* Countdown */
+.cd { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.cd:last-child { border-bottom: 0; }
+.cd .days { text-align: center; border-radius: 8px; padding: 6px 0; background: var(--sunk); }
+.cd .days b { display: block; font-family: var(--f-data); font-size: 22px; line-height: 1.1; }
+.cd .days span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.cd .days.hot b { color: var(--late); }
+.cd .days.warm b { color: var(--soon); }
+.cd .ttl { font-weight: 600; overflow-wrap: anywhere; }
+
+/* Courses */
+.courses { display: flex; flex-direction: column; gap: 12px; }
+.course { border: 1px solid var(--line); border-radius: 8px; padding: 12px; border-top: 4px solid var(--cc); }
+.course .hd { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.course .nm { font-weight: 700; }
+.course .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 8px; }
+.course .stats div { min-width: 0; }
+.course .stats b { display: block; font-family: var(--f-data); font-size: 17px; font-variant-numeric: tabular-nums; }
+.course .stats span { font-size: 12px; color: var(--muted); }
+.bar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; }
+.bar .e { background: var(--cc); }
+.bar .l { background: color-mix(in srgb, var(--late) 55%, transparent); }
+.course .lever { font-size: 13px; margin-top: 8px; color: var(--muted); }
+.course .lever b { color: var(--ink); font-weight: 600; }
+.course label { font-size: 12px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.course select { font-size: 12px; padding: 1px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+
+/* Notices */
+.notice { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.notice:last-child { border-bottom: 0; }
+.notice .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; margin-top: 2px; }
+
+/* Forms / settings */
+details.panel > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel > summary::after { content: "Show"; font-size: 13px; color: var(--accent); font-weight: 600; }
+details.panel[open] > summary::after { content: "Hide"; }
+details.panel[open] > summary { margin-bottom: 14px; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
+.form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+.form input, .form select, textarea.paste { border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; background: var(--surface); min-width: 0; width: 100%; }
+.checks { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+.checks label { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; max-width: 70ch; }
+.steps code { font-family: var(--f-data); font-size: 12px; background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+textarea.paste { font-family: var(--f-data); font-size: 12px; height: 90px; resize: vertical; margin-top: 6px; }
+.msg { font-size: 14px; margin-top: 8px; }
+.msg.err { color: var(--late); }
+.msg.good { color: var(--ok); }
+.banner { padding: 12px 14px; border-radius: 8px; background: var(--soon-bg); color: var(--ink); margin-bottom: 18px; font-size: 14px; }
+.empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
+.foot { margin-top: 28px; font-size: 12px; color: var(--muted); max-width: 80ch; }
+.sub2 { font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
+/* Assignments */
+.tfilters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.tfilters select { font-size: 13px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.tfilters label { display: inline-flex; gap: 6px; align-items: center; }
+.tasks { display: flex; flex-direction: column; gap: 8px; }
+details.task { border: 1px solid var(--line); border-left: 4px solid var(--cc, var(--muted)); border-radius: 8px; background: var(--surface); }
+details.task[open] { background: var(--sunk); }
+details.task > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 12px; align-items: center; }
+details.task > summary::-webkit-details-marker { display: none; }
+details.task > summary .ttl { font-weight: 600; overflow-wrap: anywhere; }
+details.task > summary .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); align-items: center; margin-top: 2px; }
+details.task > summary .right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+details.task > summary .open-hint { font-size: 12px; color: var(--accent); font-weight: 600; }
+details.task[open] > summary .open-hint::after { content: " ▴"; }
+details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
+.tbody { padding: 0 12px 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; }
+.facts span b { font-weight: 600; }
+.facts span { color: var(--muted); }
+.facts span b { color: var(--ink); }
+.desc { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.55; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; max-height: 320px; overflow: auto; max-width: 90ch; }
+.tlinks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.rubric { overflow-x: auto; }
+.rubric table { border-collapse: collapse; font-size: 13px; min-width: 320px; }
+.rubric td, .rubric th { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rubric th { color: var(--muted); font-weight: 600; }
+.helpbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.helpnote { font-size: 13px; color: var(--muted); }
+.convo { display: flex; flex-direction: column; gap: 10px; max-width: 90ch; }
+.ai { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; min-width: 0; }
+.ai h4, .ai h5 { font-family: var(--f-display); margin: 12px 0 4px; font-size: 15px; }
+.ai h5 { font-size: 14px; }
+.ai > :first-child { margin-top: 0; }
+.ai p { margin: 6px 0; }
+.ai ul, .ai ol { margin: 6px 0; padding-left: 22px; }
+.ai li { margin: 2px 0; }
+.ai code { font-family: var(--f-data); font-size: 12.5px; background: var(--sunk); padding: 1px 4px; border-radius: 4px; }
+.ai pre { background: var(--sunk); padding: 10px; border-radius: 6px; overflow-x: auto; }
+.ai pre code { background: none; padding: 0; }
+.ai .thinking { color: var(--muted); font-style: italic; }
+.ai.err { border-color: var(--late); color: var(--late); }
+.you { align-self: flex-end; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border-radius: 8px; padding: 8px 12px; font-size: 14px; max-width: 80%; overflow-wrap: anywhere; }
+.ask { display: flex; gap: 8px; max-width: 90ch; }
+.ask input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; background: var(--surface); }
+.btn.help { color: var(--accent); }
+.attbox { border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-width: 90ch; }
+.atthead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13px; }
+.attlist { display: flex; flex-wrap: wrap; gap: 6px; }
+.attlist .pill { white-space: normal; overflow-wrap: anywhere; }
+.upl { align-self: flex-start; display: inline-block; }
+.upl:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.login { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
+.logincard { width: min(420px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.logincard h1 { font-size: 28px; font-weight: 800; }
+.logincard form { display: flex; flex-direction: column; gap: 8px; }
+.logincard input { border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; background: var(--surface); font-size: 16px; }
+.syncstat { font-size: 14px; margin-bottom: 8px; }
+.copyfallback { width: 100%; height: 140px; font-family: var(--f-data); font-size: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); padding: 8px; }
+@media (prefers-reduced-motion: no-preference) { .btn, .row, .blk { transition: background-color .15s, border-color .15s, opacity .15s; } }
+</style>
+
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <div class="logincard">
+    <h1>Study Desk</h1>
+    <p class="muted" id="loginText">Sign in with your email. You get a one-time login link, no password.</p>
+    <form id="loginForm">
+      <label for="loginEmail" class="muted" style="font-size:13px">Email</label>
+      <input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+      <button class="btn primary" type="submit" id="loginBtn">Send login link</button>
+    </form>
+    <div class="msg" id="loginMsg" role="status"></div>
+  </div>
+</div>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Study Desk</h1>
+      <div class="when" id="when">&nbsp;</div>
+    </div>
+    <div class="syncbox">
+      <span class="stamp" id="stamp">Loading your Canvas data…</span>
+      <button class="btn primary" id="openSync" type="button">Sync now</button>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+
+  <div class="strip" id="strip" aria-label="Summary">
+    <div class="late"><div class="n" id="sLate">–</div><div class="l">to catch up</div></div>
+    <div class="soon"><div class="n" id="sSoon">–</div><div class="l">due in the next 72 h</div></div>
+    <div><div class="n" id="sWeek">–</div><div class="l">due in the next 7 days</div></div>
+    <div><div class="n" id="sLoad">–</div><div class="l">planned this week vs. your budget</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel">
+        <header><h2>Do next</h2><span class="aside" id="nextAside"></span></header>
+        <div class="next" id="next"><div class="empty">Loading…</div></div>
+      </section>
+
+      <section class="panel">
+        <header><h2>Week plan</h2><span class="aside" id="planAside"></span></header>
+        <div class="week" id="week"></div>
+        <div class="legend">
+          <span>Bigger tasks start several days early and finish the day before they’re due.</span>
+          <span>Bold = due that day.</span>
+          <span style="color:var(--late)">Red outline = doesn't fit your budget.</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><h2>Upcoming</h2><span class="aside">Next 5 weeks · tick items you've finished</span></header>
+        <div class="list" id="upcoming"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel catch">
+        <header><h2>Catch up</h2><span class="aside">Missing in the last 3 weeks</span></header>
+        <div class="list" id="catch"></div>
+      </section>
+
+      <section class="panel">
+        <header><h2>Exams &amp; big deadlines</h2><button class="btn small ghost" type="button" id="jumpAdd">Add exam</button></header>
+        <div id="big"></div>
+      </section>
+
+      <section class="panel">
+        <header><h2>Courses</h2><span class="aside">Canvas points, not final grades</span></header>
+        <div class="courses" id="courses"></div>
+      </section>
+
+      <section class="panel">
+        <header><h2>From your teachers</h2><span class="aside">Last 10 days</span></header>
+        <div id="notices"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" id="tasksPanel" style="margin-top:22px">
+    <header><h2>Assignments</h2>
+      <div class="tfilters">
+        <label>Course <select id="tCourse"><option value="">All</option></select></label>
+        <label><input type="checkbox" id="tDone"> Show finished</label>
+      </div>
+    </header>
+    <p class="helpnote" style="margin:0 0 12px">Open a task to read its full Canvas description and attachments, then copy a ready-made prompt and paste it into Claude.</p>
+    <div class="tasks" id="tasks"></div>
+  </section>
+  <div class="col" style="margin-top:22px">
+    <details class="panel" id="syncPanel">
+      <summary><h2>Canvas sync</h2></summary>
+      <div class="syncstat" id="syncStat">Checking…</div>
+      <p class="muted" style="font-size:13px;max-width:70ch;margin:0 0 10px">Study Desk syncs with Canvas by itself every 3 hours, even when this page is closed. Tap <b>Sync now</b> at the top for an immediate update. PDFs attached to tasks are read the first time you open a task.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="signOut" type="button">Sign out</button></div>
+    </details>
+
+    <details class="panel" id="addPanel">
+      <summary><h2>Add an exam or deadline</h2></summary>
+      <form class="form" id="addForm">
+        <label>Course<select id="fCourse"></select></label>
+        <label>What<input id="fTitle" required placeholder="e.g. Tentamen"></label>
+        <label>Date<input id="fDate" type="date" required></label>
+        <label>Time<input id="fTime" type="time" value="08:00"></label>
+        <label>Type<select id="fKind"><option value="exam">Exam (plan prep before it)</option><option value="deadline">Deadline (plan the work)</option></select></label>
+        <label>Hours to prepare<input id="fPrep" type="number" min="0.5" max="80" step="0.5" value="12"></label>
+        <button class="btn primary" type="submit" id="fAdd">Add</button>
+      </form>
+      <div class="msg" id="addMsg" role="status"></div>
+      <div class="sub2">Your added items</div>
+      <div class="list" id="extrasList"></div>
+    </details>
+
+    <details class="panel" id="setPanel">
+      <summary><h2>Settings</h2></summary>
+      <div class="form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <label>Study hours per week (outside class)<input id="hours" type="number" min="1" max="60" step="1"></label>
+      </div>
+      <div class="sub2">Courses to show</div>
+      <div class="checks" id="vis"></div>
+    </details>
+  </div>
+
+  <p class="foot">Data comes from your KTH Canvas account and is stored in your private Supabase database, readable only after you sign in. KTH final grades are set in Ladok; the Canvas points here only show how assignments and quizzes went. Ticking an item done only changes this dashboard, not Canvas.</p>
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script id="backend">
+(function () {
+  const CFG = { url: 'https://ufvckdzrfytlyptyvmsh.supabase.co', key: 'sb_publishable_wl1xU8VxNwF31hp-eAL5xw_rLFWcUpB' };
+  const sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' } });
+  const $ = id => document.getElementById(id);
+  const SD = window.SD = { sb, cfg: CFG, signedIn: false };
+
+  // ---- document store on top of the docs table (same calls the page already makes) ----
+  const listeners = new Map();
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/-/g, '').slice(0, 20);
+  const snapDoc = (id, row) => ({ id, exists: !!row, data: () => (row ? row.data : undefined), metadata: { fromCache: false, hasPendingWrites: false } });
+  const fail = e => ({ code: 'unavailable', message: (e && e.message) || String(e) });
+  async function fetchDoc(col, id, fields = 'data,updated_at') {
+    const { data, error } = await sb.from('docs').select(fields).eq('collection', col).eq('id', id).maybeSingle();
+    if (error) throw fail(error); return data;
+  }
+  async function fetchCol(col, fields = 'id,data,updated_at') {
+    const { data, error } = await sb.from('docs').select(fields).eq('collection', col);
+    if (error) throw fail(error); return data || [];
+  }
+  async function refresh(key, force) {
+    const L = listeners.get(key); if (!L || !L.fns.size) return;
+    try {
+      if (L.kind === 'doc') {
+        const head = await fetchDoc(L.col, L.id, 'updated_at');
+        const sig = head ? head.updated_at : 'none';
+        if (!force && sig === L.last) return;
+        const row = head ? await fetchDoc(L.col, L.id) : null;
+        L.last = sig; const snap = snapDoc(L.id, row);
+        L.fns.forEach(f => { try { f(snap); } catch (e) { console.error(e); } });
+      } else {
+        const heads = await fetchCol(L.col, 'id,updated_at');
+        const sig = JSON.stringify(heads.map(r => r.id + r.updated_at).sort());
+        if (!force && sig === L.last) return;
+        const rows = heads.length ? await fetchCol(L.col) : [];
+        L.last = sig; const docs = rows.map(r => snapDoc(r.id, r));
+        const snap = { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } };
+        L.fns.forEach(f => { try { f(snap); } catch (e) { console.error(e); } });
+      }
+    } catch (e) { console.warn('refresh failed', key, e); }
+  }
+  function listen(key, spec, fn) {
+    let L = listeners.get(key);
+    if (!L) { L = { ...spec, fns: new Set(), last: undefined }; listeners.set(key, L); }
+    L.fns.add(fn); refresh(key, true);
+    return () => L.fns.delete(fn);
+  }
+  const refreshAll = () => listeners.forEach((_, k) => refresh(k));
+  setInterval(() => { if (!document.hidden && SD.signedIn) refreshAll(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && SD.signedIn) refreshAll(); });
+  function doc(p) {
+    const [col, id] = p.split('/'); const key = 'd:' + col + '/' + id;
+    const after = () => { refresh(key, true); refresh('c:' + col, true); };
+    return {
+      id, path: p,
+      get: async () => snapDoc(id, await fetchDoc(col, id)),
+      set: async data => { const { error } = await sb.from('docs').upsert({ collection: col, id, data, updated_at: new Date().toISOString() }); if (error) throw fail(error); after(); },
+      update: async data => { const cur = await fetchDoc(col, id); if (!cur) throw { code: 'invalid_argument', message: 'missing' }; const { error } = await sb.from('docs').upsert({ collection: col, id, data: { ...cur.data, ...data }, updated_at: new Date().toISOString() }); if (error) throw fail(error); after(); },
+      delete: async () => { const { error } = await sb.from('docs').delete().eq('collection', col).eq('id', id); if (error) throw fail(error); after(); },
+      onSnapshot: (fn) => listen(key, { kind: 'doc', col, id }, fn),
+      collection: () => { throw new Error('not supported'); },
+    };
+  }
+  function collection(col) {
+    return {
+      path: col,
+      doc: id => doc(col + '/' + (id || newId())),
+      add: async data => { const r = doc(col + '/' + newId()); await r.set(data); return r; },
+      get: async () => { const rows = await fetchCol(col); const docs = rows.map(r => snapDoc(r.id, r)); return { docs, size: docs.length, empty: !docs.length, docChanges: () => [] }; },
+      onSnapshot: (fn) => listen('c:' + col, { kind: 'col', col }, fn),
+    };
+  }
+  const db = { doc, collection };
+  SD.db = db; SD.refreshAll = () => listeners.forEach((_, k) => refresh(k, true));
+
+  // ---- login ----
+  let resolveDb; const dbReady = new Promise(r => { resolveDb = r; });
+  window.claude = { use: async name => (name === 'db' ? dbReady : null) };
+  function showLogin(text) { $('login').hidden = false; if (text) $('loginText').textContent = text; }
+  async function boot() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { showLogin(); return; }
+    const { data: ok, error } = await sb.rpc('claim_owner');
+    if (error || !ok) { await sb.auth.signOut(); showLogin('This Study Desk belongs to another account. Sign in with the owner\u2019s email.'); return; }
+    if (location.search.includes('code=')) history.replaceState(null, '', location.pathname + location.hash);
+    $('login').hidden = true;
+    if (!SD.signedIn) { SD.signedIn = true; resolveDb(db); watchSync(); }
+  }
+  sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' && !SD.signedIn) setTimeout(boot, 0); });
+  $('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = $('loginEmail').value.trim(); const msg = $('loginMsg');
+    if (!email) return;
+    $('loginBtn').disabled = true; msg.className = 'msg'; msg.textContent = 'Sending…';
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    $('loginBtn').disabled = false;
+    if (error) { msg.className = 'msg err'; msg.textContent = 'Couldn\u2019t send the link: ' + error.message; }
+    else { msg.className = 'msg good'; msg.textContent = 'Check your email and tap the link. It opens Study Desk signed in.'; }
+  });
+  $('signOut').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+  // ---- Canvas sync status ----
+  let meta = null, polling = null;
+  const ago = iso => { if (!iso) return 'never'; const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; };
+  function showSync() {
+    const st = $('syncStat'), btn = $('openSync');
+    if (!meta) { st.textContent = 'Not synced yet. Tap Sync now.'; btn.textContent = 'Sync now'; btn.disabled = false; return; }
+    const running = meta.running && Date.now() - Date.parse(meta.lastAttempt || 0) < 5 * 60e3;
+    btn.textContent = running ? 'Syncing…' : 'Sync now'; btn.disabled = running;
+    st.innerHTML = running ? 'Syncing with Canvas now…' :
+      (meta.lastError ? '<span style="color:var(--late)">Last sync failed: ' + meta.lastError.replace(/[<>&]/g, '') + '</span><br>' : '') +
+      'Last successful sync: <b>' + ago(meta.lastOk) + '</b>' + (meta.result ? ' (' + meta.result.items + ' items, ' + meta.result.attachments + ' attachments)' : '');
+    if (meta.lastError && !running) document.getElementById('stamp').textContent = 'Sync failed';
+  }
+  function watchSync() {
+    db.doc('meta/sync').onSnapshot(s => {
+      meta = s.exists ? s.data() : null; showSync();
+      const running = meta && meta.running && Date.now() - Date.parse(meta.lastAttempt || 0) < 5 * 60e3;
+      if (running && !polling) polling = setInterval(() => refresh('d:meta/sync', false), 3000);
+      if (!running && polling) { clearInterval(polling); polling = null; SD.refreshAll(); }
+    });
+  }
+  SD.syncNow = async () => {
+    const btn = $('openSync'); btn.disabled = true; btn.textContent = 'Syncing…';
+    const { error } = await sb.functions.invoke('canvas-sync', { body: { source: 'button' } });
+    if (error && !(error.context && error.context.status === 429)) { btn.disabled = false; btn.textContent = 'Sync now'; $('syncStat').textContent = 'Couldn\u2019t start the sync: ' + error.message; }
+    refresh('d:meta/sync', true);
+    if (!polling) polling = setInterval(() => refresh('d:meta/sync', false), 3000);
+  };
+
+  // ---- PDFs: fetched through the canvas-file function, text extracted here ----
+  SD.fetchCanvasFile = async fid => {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(CFG.url + '/functions/v1/canvas-file?fid=' + encodeURIComponent(fid), { headers: { Authorization: 'Bearer ' + (session && session.access_token), apikey: CFG.key } });
+    if (!r.ok) throw new Error('download failed (' + r.status + ')');
+    return new Uint8Array(await r.arrayBuffer());
+  };
+  boot();
+})();
+</script>
+<script id="logic">
+const TZ = 'Europe/Stockholm';
+const DAY = 864e5;
+const fKey = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const fHour = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', hourCycle: 'h23' });
+const fTime = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const fDate = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' });
+const fWd = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short' });
+const fDm = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' });
+const keyOf = ms => fKey.format(new Date(ms));
+const addDays = (key, n) => { const [y, m, d] = key.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+const keyDate = key => new Date(key + 'T12:00:00Z');
+function isoWeek(key) {
+  const d = keyDate(key); const wd = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - wd + 3);
+  const y = d.getUTCFullYear(); const jan4 = new Date(Date.UTC(y, 0, 4)); const w4 = (jan4.getUTCDay() + 6) % 7;
+  return 1 + Math.round(((d - jan4) / DAY - 3 + w4) / 7);
+}
+function kthPeriod(key) {
+  const md = key.slice(5);
+  if (md >= '08-24' && md <= '10-25') return 'HT · P1';
+  if (md >= '10-26' || md <= '01-17') return 'HT · P2';
+  if (md >= '01-18' && md <= '03-21') return 'VT · P3';
+  if (md >= '03-22' && md <= '06-10') return 'VT · P4';
+  return 'Summer';
+}
+function fmtH(h) { const m = Math.round(h * 60); if (m < 60) return m + ' min'; const hh = Math.floor(m / 60), mm = m % 60; return hh + ' h' + (mm ? ' ' + mm + ' min' : ''); }
+function niceName(c) {
+  if (c.code === 'TIDAB') return 'Programme room';
+  return c.name.replace(c.code, '').replace(/\b(HT|VT)\d{2}\b/, '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
+}
+function normalize(snap) {
+  const byId = {}; const codes = {};
+  for (const c of snap.courses || []) {
+    byId[c.id] = c;
+    const main = !/^Förinställd/.test(c.term || '');
+    if (!codes[c.code] || (main && !codes[c.code].main)) codes[c.code] = { code: c.code, name: niceName(c), main };
+  }
+  const host = snap.host || 'canvas.kth.se';
+  const items = (snap.items || []).map(i => {
+    const s = i.s ? { sub: !!i.s.sub, gr: !!i.s.gr, miss: !!i.s.miss, late: !!i.s.late, ex: !!i.s.ex, redo: !!i.s.redo, fb: !!i.s.fb } : null;
+    const code = byId[i.c] ? byId[i.c].code : null;
+    const url = i.url ? (/^https?:/.test(i.url) ? i.url : 'https://' + host + i.url) : null;
+    return { ...i, s, code, url, dueMs: Date.parse(i.due), pts: typeof i.pts === 'number' ? i.pts : null, score: typeof i.score === 'number' ? i.score : null };
+  }).filter(i => i.title && !isNaN(i.dueMs));
+  return { items, codes, syncedMs: Date.parse(snap.syncedAt) };
+}
+function defEst(i) {
+  const t = (i.title || '').toLowerCase();
+  if (/komplettering/.test(t)) return 6;
+  if (i.t === 'quiz') { if (/vocabulary/.test(t)) return 0.5; return (i.pts || 0) >= 15 ? 1.5 : 1; }
+  if (i.t === 'discussion_topic') return /pitch/.test(t) ? 2 : 1;
+  if (i.t === 'wiki_page') return 0.25;
+  if (/final|half-term|main project/.test(t)) return 6;
+  if (/\blab\b/.test(t)) return 4;
+  if (i.t === 'assignment') {
+    if ((i.pts || 0) >= 7) return 4;
+    if (/cv|cover letter|article|blog|negotiation/.test(t)) return 2.5;
+    return 2;
+  }
+  return 1;
+}
+const isTask = i => i.t !== 'announcement' && i.t !== 'wiki_page';
+function isDone(i, prefs) { return !!(prefs.done && prefs.done[i.id]) || !!i.done || !!(i.s && (i.s.sub || i.s.ex)); }
+function estOf(i, prefs) { const v = prefs.est && prefs.est[i.id]; return typeof v === 'number' ? v : defEst(i); }
+
+function analyze(norm, extras, prefs, now) {
+  const hidden = new Set(prefs.hidden || []);
+  const vis = i => i.code && !hidden.has(i.code);
+  const tasks = norm.items.filter(i => isTask(i) && vis(i));
+  const catchUp = tasks.filter(i => !isDone(i, prefs) && i.dueMs < now && i.dueMs > now - 21 * DAY &&
+    ((i.s && (i.s.miss || !i.s.sub) && !i.s.gr) || (!i.s && (i.pts || 0) > 0))).sort((a, b) => a.dueMs - b.dueMs);
+  const open = tasks.filter(i => !isDone(i, prefs) && i.dueMs >= now).sort((a, b) => a.dueMs - b.dueMs);
+  const ex = (extras || []).filter(e => !hidden.has(e.code)).map(e => ({ ...e, dueMs: Date.parse(e.due) })).filter(e => !isNaN(e.dueMs));
+  const notices = norm.items.filter(i => i.t === 'announcement' && (!i.code || !hidden.has(i.code)) && i.dueMs > now - 10 * DAY && i.dueMs <= now).sort((a, b) => b.dueMs - a.dueMs).slice(0, 8);
+  return { tasks, catchUp, open, extras: ex, notices };
+}
+
+function buildPlan(a, prefs, now, horizon = 35) {
+  const today = keyOf(now);
+  const keys = Array.from({ length: horizon }, (_, n) => addDays(today, n));
+  const cap = Math.max(0.25, (prefs.hours || 8) / 7);
+  const rem = keys.map(() => cap);
+  const days = keys.map(k => ({ key: k, blocks: [], used: 0 }));
+  const idxOf = ms => { const k = keyOf(ms); if (k < keys[0]) return 0; const i = keys.indexOf(k); return i < 0 ? horizon - 1 : i; };
+  const q = h => Math.round(h * 4) / 4;
+  const qf = h => Math.floor(h * 4 + 1e-9) / 4;
+  const qc = h => Math.ceil(h * 4 - 1e-9) / 4;
+  const leadFor = h => h >= 2 ? Math.min(14, Math.max(3, Math.ceil(h / (cap * 0.5)) + 1)) : h >= 1 ? 2 : 1;
+  const jobs = [];
+  for (const i of a.catchUp) {
+    const worth = (i.pts || 0) > 0;
+    jobs.push({ ref: i, id: i.id, code: i.code, title: i.title, hours: estOf(i, prefs), dueMs: now + (worth ? 1.5 : 4) * DAY, start: 0, last: Math.min(worth ? 1 : 3, horizon - 1), late: true });
+  }
+  for (const i of a.open) {
+    const h = estOf(i, prefs);
+    const dueIdx = idxOf(i.dueMs);
+    const morning = Number(fHour.format(new Date(i.dueMs))) < 12;
+    const last = Math.max(0, (h >= 2 || morning) ? dueIdx - 1 : dueIdx);
+    const start = Math.max(0, last - leadFor(h) + 1);
+    if (i.dueMs > now + horizon * DAY && start > 0) continue;
+    jobs.push({ ref: i, id: i.id, code: i.code, title: i.title, hours: h, dueMs: i.dueMs, start, last: Math.min(last, horizon - 1), dueIdx: i.dueMs > now + horizon * DAY ? null : dueIdx });
+  }
+  for (const e of a.extras) {
+    const prep = Number(e.prep) || 0;
+    if (!prep || e.dueMs < now) continue;
+    const inRange = e.dueMs <= now + horizon * DAY;
+    const dueIdx = inRange ? idxOf(e.dueMs) : null;
+    const last = Math.max(0, (dueIdx == null ? horizon : dueIdx) - 1);
+    const lead = e.kind === 'exam' ? 14 : leadFor(prep);
+    const start = Math.max(0, last - lead + 1);
+    if (start >= horizon) continue;
+    jobs.push({ ref: e, id: 'x:' + e.id, code: e.code, title: (e.kind === 'exam' ? 'Prepare: ' : '') + e.title, hours: prep, dueMs: e.dueMs, start, last: Math.min(last, horizon - 1), dueIdx, extra: true });
+  }
+  jobs.sort((x, y) => x.dueMs - y.dueMs);
+  function put(d, j, h, over) {
+    if (h <= 0) return;
+    rem[d] -= h; days[d].used = q(days[d].used + h);
+    const b = days[d].blocks.find(b => b.id === j.id);
+    if (b) { b.hours = q(b.hours + h); b.over = b.over || !!over; }
+    else days[d].blocks.push({ id: j.id, code: j.code, title: j.title, hours: h, over: !!over, late: !!j.late, due: j.dueIdx === d, ref: j.ref, job: j });
+    const p = j.parts.find(p => p.d === d); if (p) p.h = q(p.h + h); else j.parts.push({ d, h });
+  }
+  for (const j of jobs) {
+    j.parts = []; j.over = 0;
+    const start = Math.min(j.start, j.last), last = j.last, n = last - start + 1;
+    let left = j.hours;
+    // 1) even share per day, as far as the budget allows
+    const share = qc(j.hours / n);
+    for (let d = start; d <= last && left > 0; d++) { const t = qf(Math.min(share, rem[d], left)); if (t > 0) { put(d, j, t); left = q(left - t); } }
+    // 2) any spare budget in the window, earliest first
+    for (let d = start; d <= last && left > 0; d++) { const t = qf(Math.min(rem[d], left)); if (t > 0) { put(d, j, t); left = q(left - t); } }
+    // 3) still short: start even earlier, using free time on the days before the window (closest first)
+    for (let d = start - 1; d >= 0 && left > 0; d--) { const t = qf(Math.min(rem[d], left)); if (t > 0) { put(d, j, t); left = q(left - t); } }
+    // 4) whatever still doesn't fit is spread over the window and flagged
+    if (left > 0) {
+      j.over = left;
+      while (left > 0) { let best = start; for (let d = start; d <= last; d++) if (days[d].used < days[best].used - 1e-9) best = d; const t = Math.min(0.25, left); put(best, j, t, true); left = q(left - t); }
+    }
+    j.parts.sort((x, y) => x.d - y.d);
+  }
+  // due markers for deadlines in the first week that have no work block on their day
+  for (const j of jobs) if (!j.late && j.dueIdx != null && j.dueIdx < 7 && !days[j.dueIdx].blocks.some(b => b.id === j.id)) days[j.dueIdx].blocks.push({ id: j.id, code: j.code, title: j.title, hours: 0, due: true, ref: j.ref, job: j, marker: true });
+  for (const d of days) d.blocks.sort((x, y) => (x.marker ? 1 : 0) - (y.marker ? 1 : 0) || x.job.dueMs - y.job.dueMs);
+  return { days, cap, jobs, keys };
+}
+
+function dayName(plan, d) { return d === 0 ? 'today' : d === 1 ? 'tomorrow' : fWd.format(keyDate(plan.keys[d])); }
+function partsText(plan, j) {
+  const ps = j.parts.slice(0, 4).map(p => fmtH(p.h) + ' ' + dayName(plan, p.d));
+  return ps.join(', ') + (j.parts.length > 4 ? ', …' : '');
+}
+
+function doNext(a, plan, prefs, now) {
+  const out = []; const seen = new Set();
+  const push = (ref, why, hours, late, kind, job) => { if (seen.has(ref.id) || out.length >= 3) return; seen.add(ref.id); out.push({ ref, why, hours, late, kind, job }); };
+  for (const d of [0, 1, 2]) for (const b of plan.days[d].blocks) {
+    if (b.marker) continue;
+    const j = b.job;
+    const ref = j.extra ? { ...b.ref, id: j.id, title: j.title } : b.ref;
+    if (b.late) { push(ref, 'Missing since ' + fDate.format(new Date(b.ref.dueMs)) + '. Submit late if allowed, or ask the teacher.', j.hours, true, 'late', j); continue; }
+    const dueToday = j.dueIdx === 0;
+    const multi = j.parts.length > 1;
+    let why = 'Due ' + relDue(j.dueMs, now) + ' · about ' + fmtH(j.hours);
+    if (multi) why += ' · plan: ' + partsText(plan, j);
+    if (j.over) why += ' · doesn’t fit your budget, find ' + fmtH(j.over) + ' extra';
+    push(ref, why, j.hours, false, dueToday ? 'due' : multi && j.parts[0].d === d ? 'start' : 'next', j);
+  }
+  return out;
+}
+
+function relDue(ms, now) {
+  const k = keyOf(ms), t = keyOf(now), time = fTime.format(new Date(ms));
+  const diff = ms - now;
+  if (diff < 0) { const d = Math.floor(-diff / DAY); return d >= 1 ? d + (d === 1 ? ' day' : ' days') + ' late' : Math.max(1, Math.round(-diff / 36e5)) + ' h late'; }
+  if (k === t) return 'today ' + time + (diff < 12 * 36e5 ? ' (in ' + Math.max(1, Math.round(diff / 36e5)) + ' h)' : '');
+  if (k === addDays(t, 1)) return 'tomorrow ' + time;
+  if (diff < 6.5 * DAY) return fWd.format(keyDate(k)) + ' ' + time;
+  return fDate.format(new Date(ms)) + ' ' + time;
+}
+
+function courseStats(norm, a, prefs, now) {
+  const hidden = new Set(prefs.hidden || []);
+  const codes = Object.keys(norm.codes).filter(c => !hidden.has(c) && c !== 'TIDAB').sort();
+  return codes.map(code => {
+    const its = a.tasks.filter(i => i.code === code);
+    const graded = its.filter(i => i.s && (i.s.gr || i.s.sub) && (i.pts || 0) > 0 && i.score != null);
+    const earned = graded.reduce((s, i) => s + i.score, 0), possible = graded.reduce((s, i) => s + i.pts, 0);
+    const open = a.open.filter(i => i.code === code);
+    const openPts = open.reduce((s, i) => s + (i.pts || 0), 0);
+    const missing = a.catchUp.filter(i => i.code === code).length;
+    const lost = its.filter(i => i.s && i.s.gr && i.s.miss && (i.pts || 0) > 0).reduce((s, i) => s + i.pts, 0);
+    const lever = open.filter(i => (i.pts || 0) > 0).sort((x, y) => y.pts - x.pts || x.dueMs - y.dueMs)[0] || null;
+    const kompl = open.find(i => /komplettering/i.test(i.title));
+    const next = open[0] || null;
+    return { code, name: norm.codes[code].name, earned, possible, open: open.length, openPts, missing, lost, lever, kompl, next, target: (prefs.targets || {})[code] || 'E' };
+  });
+}
+
+function bigItems(a, now) {
+  const rx = /tentamen|exam|final|komplettering|half-term|\bks\d|\bproject\b/i;
+  const canvas = a.open.filter(i => (rx.test(i.title) || (i.t !== 'quiz' && (i.pts || 0) >= 25)) && i.dueMs < now + 90 * DAY).map(i => ({ id: i.id, code: i.code, title: i.title, dueMs: i.dueMs, url: i.url, pts: i.pts, src: 'canvas' }));
+  const ex = a.extras.filter(e => e.dueMs >= now - DAY).map(e => ({ id: 'x:' + e.id, code: e.code, title: e.title, dueMs: e.dueMs, kind: e.kind, src: 'you' }));
+  return canvas.concat(ex).sort((x, y) => x.dueMs - y.dueMs).slice(0, 8);
+}
+</script>
+
+<script id="app">
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const DEFAULT_PREFS = { hours: 8, hidden: [], targets: {}, done: {}, est: {} };
+  const state = { snap: undefined, prefs: { ...DEFAULT_PREFS }, extras: [], db: null, prefsLoaded: false, now: Date.now() };
+  const EST_OPTS = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20];
+  const GRADES = ['P', 'E', 'D', 'C', 'B', 'A'];
+
+  function colorMap(codes) {
+    const m = {}; codes.slice().sort().forEach((c, i) => { m[c] = 'var(--c' + ((i % 6) + 1) + ')'; }); return m;
+  }
+  let CC = {};
+  const cc = code => CC[code] || 'var(--muted)';
+  const chip = code => code ? '<span class="chip" style="--cc:' + cc(code) + '">' + esc(code) + '</span>' : '';
+  const link = (url, text) => url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(text) + '</a>' : esc(text);
+
+  // ---------- header ----------
+  function renderWhen() {
+    const k = keyOf(state.now);
+    $('when').innerHTML = '<b>Vecka ' + isoWeek(k) + '</b> · ' + esc(fDate.format(new Date(state.now))) + ' · ' + esc(kthPeriod(k));
+  }
+
+  function render() {
+    state.now = Date.now();
+    renderWhen();
+    if (state.snap === undefined) return;
+    if (state.snap === null) { renderEmpty(); return; }
+    const norm = normalize(state.snap);
+    const allCodes = Object.keys(norm.codes);
+    CC = colorMap(allCodes.filter(c => !(state.prefs.hidden || []).includes(c)));
+    const a = analyze(norm, state.extras, state.prefs, state.now);
+    const plan = buildPlan(a, state.prefs, state.now);
+
+    // stamp
+    const age = state.now - norm.syncedMs;
+    const st = $('stamp');
+    st.textContent = 'Synced ' + relAgo(age);
+    st.classList.toggle('stale', age > 2 * DAY);
+    st.title = new Date(norm.syncedMs).toLocaleString('en-GB', { timeZone: TZ });
+
+    // strip
+    const soon = a.open.filter(i => i.dueMs - state.now < 72 * 36e5).length;
+    const week = a.open.filter(i => i.dueMs - state.now < 7 * DAY).length;
+    const used7 = plan.days.slice(0, 7).reduce((s, d) => s + d.used, 0);
+    $('sLate').textContent = a.catchUp.length;
+    $('sSoon').textContent = soon;
+    $('sWeek').textContent = week;
+    $('sLoad').innerHTML = esc(fmtShort(used7)) + '<span class="muted" style="font-size:15px"> / ' + esc(fmtShort(state.prefs.hours || 8)) + '</span>';
+    $('sLoad').style.color = used7 > (state.prefs.hours || 8) + 0.01 ? 'var(--late)' : '';
+
+    renderNext(a, plan);
+    renderWeek(plan);
+    renderUpcoming(a);
+    renderCatch(a);
+    renderBig(a);
+    renderCourses(norm, a);
+    renderNotices(a);
+    renderSettings(allCodes, norm);
+    renderAddForm(allCodes);
+    renderExtras();
+    renderTasks(norm);
+  }
+
+  const fmtShort = h => (Math.round(h * 4) / 4).toString().replace(/\.25$/, '¼').replace(/\.5$/, '½').replace(/\.75$/, '¾') + ' h';
+  function relAgo(ms) {
+    if (ms < 60e3) return 'just now';
+    if (ms < 36e5) return Math.round(ms / 60e3) + ' min ago';
+    if (ms < DAY) return Math.round(ms / 36e5) + ' h ago';
+    const d = Math.round(ms / DAY); return d + (d === 1 ? ' day ago' : ' days ago');
+  }
+
+  function renderEmpty() {
+    $('stamp').textContent = 'Not synced yet';
+    ['sLate', 'sSoon', 'sWeek', 'sLoad'].forEach(id => $(id).textContent = '–');
+    $('next').innerHTML = '<div class="empty">No Canvas data yet. Tap <b>Sync now</b> at the top. The first sync takes about a minute.</div>';
+    ['week', 'upcoming', 'catch', 'big', 'courses', 'notices', 'tasks'].forEach(id => $(id).innerHTML = '<div class="empty">Waiting for your first sync.</div>');
+    $('syncPanel').open = true;
+  }
+
+  let planRef = null;
+  function renderNext(a, plan) {
+    planRef = plan;
+    const list = doNext(a, plan, state.prefs, state.now);
+    $('nextAside').textContent = 'Daily budget ' + fmtH(plan.cap);
+    if (!list.length) { $('next').innerHTML = '<div class="empty">Nothing due in the next three weeks. Use the time to get ahead on exam prep.</div>'; return; }
+    $('next').innerHTML = list.map((n, k) => {
+      const r = n.ref; const realId = r.id;
+      const canTick = !String(realId).startsWith('x:');
+      return '<div class="card' + (k === 0 ? ' first' : '') + '" style="--cc:' + (n.late ? 'var(--late)' : cc(r.code)) + '">' +
+        '<div class="rank">' + (k + 1) + '</div>' +
+        '<div class="t">' + chip(r.code) + ' ' + link(r.url, r.title) + '</div>' +
+        '<div class="act">' + (canTick ? '<button class="btn small help" type="button" data-help="' + esc(realId) + '">Get help</button><button class="btn small" type="button" data-done="' + esc(realId) + '">Mark done</button>' : '') + '</div>' +
+        '<div class="why">' + (n.late ? '<span class="pill late">Missing</span> ' : n.kind === 'due' ? '<span class="pill late">Due today</span> ' : n.kind === 'start' ? '<span class="pill soon">' + (n.job.parts[0].d === 0 ? 'Start today' : 'Start ' + esc(dayName(planRef, n.job.parts[0].d))) + '</span> ' : '') + esc(n.why) + '</div></div>';
+    }).join('');
+  }
+
+  function renderWeek(plan) {
+    const today = keyOf(state.now);
+    const over = plan.days.slice(0, 7).some(d => d.blocks.some(b => b.over));
+    const need = Math.ceil(plan.days.slice(0, 21).reduce((s, d) => s + d.used, 0) / 3);
+    $('planAside').textContent = over ? 'The next 3 weeks need about ' + need + ' h a week. Your budget is ' + fmtShort(state.prefs.hours || 8) + '.' : 'Fits inside ' + fmtShort(state.prefs.hours || 8) + ' a week';
+    $('planAside').style.color = over ? 'var(--late)' : '';
+    $('week').innerHTML = plan.days.slice(0, 7).map(d => {
+      const pct = Math.min(100, Math.round(d.used / plan.cap * 100));
+      const cls = d.used > plan.cap + 0.01 ? 'over' : d.used >= plan.cap - 0.01 ? 'full' : '';
+      const blocks = d.blocks.map(b => '<div class="blk' + (b.over ? ' over' : '') + (b.due ? ' due' : '') + '" style="--cc:' + (b.late ? 'var(--late)' : cc(b.code)) + '" title="' + esc(b.code + ' · ' + b.title) + '">' +
+        esc(shortTitle(b.title)) + '<span class="h">' + esc((b.code || '') + (b.marker ? ' · due' : ' · ' + fmtH(b.hours)) + (b.due && !b.marker ? ' · due' : (!b.marker && !b.late && b.job.parts.length > 1 ? ' · for ' + (b.job.dueIdx != null && b.job.dueIdx < 7 ? fWd.format(keyDate(keyOf(b.job.dueMs))) : fDm.format(keyDate(keyOf(b.job.dueMs)))) : ''))) + '</span></div>').join('');
+      return '<div class="day' + (d.key === today ? ' today' : '') + '"><div class="dh"><b>' + esc(d.key === today ? 'Today' : fWd.format(keyDate(d.key))) + '</b><span class="mono muted">' + esc(fDm.format(keyDate(d.key))) + '</span></div>' +
+        '<div class="load ' + cls + '" title="' + esc(fmtH(d.used) + ' planned of ' + fmtH(plan.cap)) + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="blks">' + (blocks || '<span class="free">Free</span>') + '</div></div>';
+    }).join('');
+  }
+  const shortTitle = t => t.length > 46 ? t.slice(0, 44) + '…' : t;
+
+  function statusPill(i) {
+    const left = i.dueMs - state.now;
+    if (left < 24 * 36e5) return '<span class="pill late">Due ' + esc(relDue(i.dueMs, state.now).replace(/ \(in.*\)/, '')) + '</span>';
+    if (left < 72 * 36e5) return '<span class="pill soon">' + esc(relDue(i.dueMs, state.now)) + '</span>';
+    return '<span class="mono muted" style="font-size:13px">' + esc(relDue(i.dueMs, state.now)) + '</span>';
+  }
+  function estSelect(i) {
+    const v = estOf(i, state.prefs);
+    const opts = EST_OPTS.includes(v) ? EST_OPTS : EST_OPTS.concat([v]).sort((a, b) => a - b);
+    return '<select class="est" data-est="' + esc(i.id) + '" aria-label="Estimated hours for ' + esc(i.title) + '">' + opts.map(o => '<option value="' + o + '"' + (o === v ? ' selected' : '') + '>' + esc(fmtShort(o)) + '</option>').join('') + '</select>';
+  }
+  const typeLabel = t => ({ assignment: 'Assignment', quiz: 'Quiz', discussion_topic: 'Discussion', wiki_page: 'Page' })[t] || t;
+
+  function renderUpcoming(a) {
+    const until = state.now + 35 * DAY;
+    const items = a.tasks.filter(i => i.dueMs >= state.now && i.dueMs < until).sort((x, y) => x.dueMs - y.dueMs);
+    if (!items.length) { $('upcoming').innerHTML = '<div class="empty">Nothing due in the next five weeks.</div>'; return; }
+    let html = '', wk = null;
+    for (const i of items) {
+      const k = keyOf(i.dueMs), w = isoWeek(k);
+      if (w !== wk) { wk = w; html += '<div class="wk">Vecka ' + w + ' · from ' + esc(fDm.format(keyDate(addDays(k, -((keyDate(k).getUTCDay() + 6) % 7))))) + '</div>'; }
+      const done = isDone(i, state.prefs); const sub = i.s && i.s.sub;
+      html += '<div class="row' + (done ? ' isdone' : '') + '">' +
+        '<input type="checkbox" data-tick="' + esc(i.id) + '"' + (done ? ' checked' : '') + (sub ? ' disabled title="Submitted on Canvas"' : '') + ' aria-label="Done: ' + esc(i.title) + '">' +
+        '<div class="main"><div class="ttl">' + link(i.url, i.title) + '</div><div class="meta">' + chip(i.code) + '<span>' + esc(typeLabel(i.t)) + '</span>' +
+        (i.pts ? '<span class="mono">' + esc(i.pts) + (i.pts === 1 ? ' pt' : ' pts') + '</span>' : '') + (sub ? '<span class="pill ok">Submitted</span>' : '') + '</div></div>' +
+        '<div class="right">' + statusPill(i) + (done ? '' : estSelect(i)) + '</div></div>';
+    }
+    $('upcoming').innerHTML = html;
+  }
+
+  function renderCatch(a) {
+    if (!a.catchUp.length) { $('catch').innerHTML = '<div class="empty"><span class="pill ok">All clear</span> Nothing missing in your visible courses.</div>'; return; }
+    $('catch').innerHTML = a.catchUp.map(i => '<div class="row"><div class="main"><div class="ttl">' + link(i.url, i.title) + '</div><div class="meta">' + chip(i.code) +
+      '<span class="pill late">' + esc(relDue(i.dueMs, state.now)) + '</span>' + (i.pts ? '<span class="mono">' + esc(i.pts) + (i.pts === 1 ? ' pt' : ' pts') + '</span>' : '<span>0 pts</span>') + '</div></div>' +
+      '<div class="right"><button class="btn small" type="button" data-done="' + esc(i.id) + '">Done / skip</button></div></div>').join('');
+  }
+
+  function renderBig(a) {
+    const list = bigItems(a, state.now);
+    if (!list.length) { $('big').innerHTML = '<div class="empty">No exams or big deadlines yet. Add exam dates from the KTH schedule so prep gets planned.</div>'; return; }
+    $('big').innerHTML = list.map(b => {
+      const days = Math.max(0, Math.ceil((keyDate(keyOf(b.dueMs)) - keyDate(keyOf(state.now))) / DAY));
+      const cls = days <= 3 ? 'hot' : days <= 10 ? 'warm' : '';
+      return '<div class="cd"><div class="days ' + cls + '"><b>' + days + '</b><span>' + (days === 1 ? 'day' : 'days') + '</span></div><div style="min-width:0"><div class="ttl">' + link(b.url, b.title) + '</div>' +
+        '<div class="meta muted" style="font-size:13px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">' + chip(b.code) + '<span class="mono">' + esc(fDate.format(new Date(b.dueMs)) + ' ' + fTime.format(new Date(b.dueMs))) + '</span>' +
+        (b.src === 'you' ? '<span class="pill plain">' + (b.kind === 'exam' ? 'Exam' : 'Deadline') + ', added by you</span>' : (b.pts ? '<span class="mono">' + esc(b.pts) + (b.pts === 1 ? ' pt' : ' pts') + '</span>' : '')) + '</div></div></div>';
+    }).join('');
+  }
+
+  function renderCourses(norm, a) {
+    const cs = courseStats(norm, a, state.prefs, state.now);
+    if (!cs.length) { $('courses').innerHTML = '<div class="empty">No visible courses. Turn some on in Settings.</div>'; return; }
+    $('courses').innerHTML = cs.map(c => {
+      const pct = c.possible ? Math.round(c.earned / c.possible * 100) : null;
+      const total = c.possible + c.openPts;
+      const eW = total ? c.earned / total * 100 : 0, lW = total ? (c.possible - c.earned) / total * 100 : 0;
+      let status = '<span class="pill ok">On track</span>';
+      if (c.kompl) status = '<span class="pill late">Fx · komplettering ' + esc(fDm.format(keyDate(keyOf(c.kompl.dueMs)))) + '</span>';
+      else if (c.missing) status = '<span class="pill late">' + c.missing + ' missing</span>';
+      else if (c.next && c.next.dueMs - state.now < 72 * 36e5) status = '<span class="pill soon">Deadline soon</span>';
+      const lever = c.kompl ? 'To pass: <b>' + link(c.kompl.url, c.kompl.title) + '</b>, due ' + esc(relDue(c.kompl.dueMs, state.now)) + '.'
+        : c.lever ? 'Most points still open: <b>' + link(c.lever.url, c.lever.title) + '</b> (' + esc(c.lever.pts) + (c.lever.pts === 1 ? ' pt' : ' pts') + ', ' + esc(relDue(c.lever.dueMs, state.now)) + ').'
+        : c.next ? 'Next: <b>' + link(c.next.url, c.next.title) + '</b>, ' + esc(relDue(c.next.dueMs, state.now)) + '.' : 'No open Canvas work.';
+      return '<div class="course" style="--cc:' + cc(c.code) + '"><div class="hd"><div><span class="chip" style="--cc:' + cc(c.code) + '">' + esc(c.code) + '</span> <span class="nm">' + esc(c.name) + '</span></div>' + status + '</div>' +
+        '<div class="stats"><div><b>' + (pct == null ? '–' : pct + '%') + '</b><span>' + (c.possible ? esc(fmtNum(c.earned) + ' / ' + fmtNum(c.possible) + ' pts graded') : 'nothing graded yet') + '</span></div>' +
+        '<div><b>' + c.open + '</b><span>open items</span></div><div><b>' + fmtNum(c.openPts) + '</b><span>points still open</span></div></div>' +
+        (total ? '<div class="bar" title="Earned, lost, and still-open points"><i class="e" style="width:' + eW.toFixed(1) + '%"></i><i class="l" style="width:' + lW.toFixed(1) + '%"></i></div>' : '') +
+        '<div class="lever">' + lever + '</div>' +
+        '<div style="margin-top:8px"><label>Target grade <select data-target="' + esc(c.code) + '">' + GRADES.map(g => '<option' + (g === c.target ? ' selected' : '') + '>' + g + '</option>').join('') + '</select></label></div></div>';
+    }).join('');
+  }
+  const fmtNum = n => (Math.round(n * 10) / 10).toString();
+
+  function renderNotices(a) {
+    if (!a.notices.length) { $('notices').innerHTML = '<div class="empty">No announcements in the last 10 days.</div>'; return; }
+    $('notices').innerHTML = a.notices.map(n => '<div class="notice">' + link(n.url, n.title) + '<div class="meta">' + chip(n.code) + '<span class="mono">' + esc(fDate.format(new Date(n.dueMs))) + '</span></div></div>').join('');
+  }
+
+  function renderSettings(allCodes, norm) {
+    const h = $('hours'); if (document.activeElement !== h) h.value = state.prefs.hours || 8;
+    const hidden = new Set(state.prefs.hidden || []);
+    $('vis').innerHTML = allCodes.sort().map(c => '<label><input type="checkbox" data-vis="' + esc(c) + '"' + (hidden.has(c) ? '' : ' checked') + '> ' + esc(c) + ' <span class="muted">' + esc(norm.codes[c].name) + '</span></label>').join('');
+  }
+  function renderAddForm(allCodes) {
+    const sel = $('fCourse'); const cur = sel.value;
+    const hidden = new Set(state.prefs.hidden || []);
+    const codes = allCodes.filter(c => !hidden.has(c) && c !== 'TIDAB').sort();
+    sel.innerHTML = codes.map(c => '<option>' + esc(c) + '</option>').join('') + '<option value="OTHER">Other</option>';
+    if (cur) sel.value = cur;
+  }
+  function renderExtras() {
+    const list = state.extras.slice().sort((a, b) => Date.parse(a.due) - Date.parse(b.due));
+    $('extrasList').innerHTML = list.length ? list.map(e => '<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div class="main"><div class="ttl">' + esc(e.title) + '</div><div class="meta">' + chip(e.code) +
+      '<span class="mono">' + esc(fDate.format(new Date(e.due)) + ' ' + fTime.format(new Date(e.due))) + '</span><span>' + (e.kind === 'exam' ? 'Exam' : 'Deadline') + ' · ' + esc(fmtH(Number(e.prep) || 0)) + ' prep</span></div></div>' +
+      '<div class="right"><button class="btn small" type="button" data-del="' + esc(e.id) + '">Remove</button></div></div>').join('') : '<div class="empty">Nothing added yet.</div>';
+  }
+
+  // ---------- assignments + Claude help ----------
+  const T = { open: new Set(), live: {}, drafts: {}, help: {}, filter: '', showDone: false, sample: undefined, sig: '', files: {}, upMsg: {} };
+  const filesP = {};
+  function ensureFiles(id) {
+    if (filesP[id]) return filesP[id];
+    if (!state.db) return Promise.resolve(T.files[id]);
+    T.files[id] = { loading: true, files: [] };
+    filesP[id] = state.db.doc('files/' + id).get().then(async s => {
+      T.files[id] = { files: s.exists ? (s.data().files || []) : [] };
+      if (lastNorm) renderTasks(lastNorm, true);
+      await readPendingPdfs(id);
+      return T.files[id];
+    }).catch(() => { T.files[id] = { files: [] }; return T.files[id]; });
+    return filesP[id];
+  }
+  async function readPendingPdfs(id) {
+    const list = (T.files[id] && T.files[id].files) || [];
+    const pending = list.filter(x => x.pending && x.fid);
+    if (!pending.length) return;
+    let changed = false;
+    for (const f of pending) {
+      try {
+        const lib = await loadPdfJs();
+        const bytes = await window.SD.fetchCanvasFile(f.fid);
+        const doc = await lib.getDocument({ data: bytes }).promise;
+        let t = '';
+        for (let p = 1; p <= Math.min(doc.numPages, 40); p++) { const tc = await (await doc.getPage(p)).getTextContent(); for (const x of tc.items) { t += x.str; if (x.hasEOL) t += '\n'; } t += '\n\n'; }
+        t = t.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        Object.assign(f, t ? { text: t.slice(0, 25000), tr: t.length > 25000, pending: false } : { pending: false, skip: 'no selectable text in this PDF' });
+        changed = true;
+      } catch (e) { f.pending = false; f.skip = 'couldn\u2019t read it here'; f.retry = true; changed = true; }
+      if (lastNorm) renderTasks(lastNorm, true);
+    }
+    if (changed && state.db) {
+      const files = list.map(x => { const { retry, ...rest } = x; return retry ? { ...rest, pending: true, skip: undefined } : rest; });
+      await state.db.doc('files/' + id).set({ files, updatedAt: new Date().toISOString() }).catch(() => {});
+    }
+  }
+  let pdfjsP = null;
+  function loadPdfJs() {
+    if (pdfjsP) return pdfjsP;
+    const add = src => new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => bad(new Error('load')); document.head.appendChild(s); });
+    const base = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+    pdfjsP = add(base + 'pdf.min.js').then(() => add(base + 'pdf.worker.min.js')).then(() => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js'; return window.pdfjsLib; });
+    pdfjsP.catch(() => { pdfjsP = null; });
+    return pdfjsP;
+  }
+  async function readUpload(file) {
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+      const lib = await loadPdfJs();
+      const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      let t = '';
+      for (let p = 1; p <= Math.min(doc.numPages, 40); p++) { const tc = await (await doc.getPage(p)).getTextContent(); for (const x of tc.items) { t += x.str; if (x.hasEOL) t += '\n'; } t += '\n\n'; }
+      t = t.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      if (!t) throw new Error('This PDF has no selectable text (it may be scanned).');
+      return { n: file.name, k: 'upload', text: t.slice(0, 25000), tr: t.length > 25000 };
+    }
+    if (file.size > 400000) throw new Error(file.name + ' is too large to read as text.');
+    const t = await file.text();
+    if (/\u0000/.test(t.slice(0, 2000))) throw new Error(file.name + ' isn\u2019t a text file. Use PDF or a code/text file.');
+    return { n: file.name, k: 'upload', text: t.slice(0, 20000), tr: t.length > 20000 };
+  }
+  async function addUploads(id, fileList) {
+    T.upMsg[id] = 'Reading ' + fileList.length + (fileList.length === 1 ? ' file…' : ' files…'); renderTasks(lastNorm, true);
+    await ensureFiles(id);
+    const cur = (T.files[id] && T.files[id].files) || [];
+    const errs = []; let added = [];
+    for (const f of fileList) { try { added.push(await readUpload(f)); } catch (e) { errs.push(e && e.message === 'load' ? 'The PDF reader couldn\u2019t load. Check your connection.' : (e && e.message) || ('Couldn\u2019t read ' + f.name)); } }
+    let files = cur.filter(x => !added.some(a => a.n === x.n)).concat(added);
+    while (JSON.stringify(files).length > 240000 && files.some(x => x.text && x.text.length > 2000)) { const big = files.reduce((a, b) => ((b.text || '').length > (a.text || '').length ? b : a)); big.text = big.text.slice(0, Math.floor(big.text.length * 0.7)); big.tr = true; }
+    T.files[id] = { files };
+    if (added.length && state.db) await state.db.doc('files/' + id).set({ files, updatedAt: new Date().toISOString() }).catch(() => errs.push('Couldn\u2019t save the file. It works until you reload.'));
+    T.upMsg[id] = (added.length ? 'Added ' + added.map(a => a.n).join(', ') + '. Claude will read it from now on.' : '') + (errs.length ? ' ' + errs.join(' ') : '');
+    renderTasks(lastNorm, true);
+  }
+  const SUBT = { online_upload: 'file upload', online_text_entry: 'text in Canvas', online_url: 'link', online_quiz: 'Canvas quiz', discussion_topic: 'discussion post', discussion: 'discussion post', on_paper: 'on paper', external_tool: 'external tool', none: 'nothing to submit in Canvas', media_recording: 'recording' };
+
+  function md(src) {
+    const lines = String(src || '').replace(/\r/g, '').split('\n');
+    let html = '', list = null, para = [], code = null;
+    const inline = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<i>$2</i>');
+    const flushP = () => { if (para.length) { html += '<p>' + para.map(inline).join('<br>') + '</p>'; para = []; } };
+    const flushL = () => { if (list) { html += '</' + list + '>'; list = null; } };
+    for (const ln of lines) {
+      if (code !== null) { if (/^\s*```/.test(ln)) { html += '<pre><code>' + esc(code) + '</code></pre>'; code = null; } else code += (code ? '\n' : '') + ln; continue; }
+      if (/^\s*```/.test(ln)) { flushP(); flushL(); code = ''; continue; }
+      let m;
+      if ((m = ln.match(/^\s*(#{1,6})\s+(.*)$/))) { flushP(); flushL(); html += (m[1].length <= 2 ? '<h4>' : '<h5>') + inline(m[2]) + (m[1].length <= 2 ? '</h4>' : '</h5>'); continue; }
+      if ((m = ln.match(/^\s*[-*•]\s+(.*)$/))) { flushP(); if (list !== 'ul') { flushL(); html += '<ul>'; list = 'ul'; } html += '<li>' + inline(m[1]) + '</li>'; continue; }
+      if ((m = ln.match(/^\s*\d+[.)]\s+(.*)$/))) { flushP(); if (list !== 'ol') { flushL(); html += '<ol>'; list = 'ol'; } html += '<li>' + inline(m[1]) + '</li>'; continue; }
+      if (!ln.trim()) { flushP(); flushL(); continue; }
+      flushL(); para.push(ln);
+    }
+    if (code !== null) html += '<pre><code>' + esc(code) + '</code></pre>';
+    flushP(); flushL();
+    return html;
+  }
+
+  function taskList(norm) {
+    const hidden = new Set(state.prefs.hidden || []);
+    const cutoff = state.now - 21 * DAY;
+    return norm.items.filter(i => isTask(i) && i.code && !hidden.has(i.code) && i.dueMs > cutoff && i.dueMs < state.now + 75 * DAY)
+      .filter(i => !T.filter || i.code === T.filter)
+      .filter(i => T.showDone || !isDone(i, state.prefs))
+      .sort((a, b) => a.dueMs - b.dueMs);
+  }
+
+  function factsHtml(i) {
+    const d = i.d || {}; const f = [];
+    f.push('<span>Type <b>' + esc(typeLabel(i.t)) + '</b></span>');
+    if (i.pts != null) f.push('<span>Points <b>' + esc(i.pts) + '</b></span>');
+    if (d.subt && d.subt.length) f.push('<span>Hand in as <b>' + esc(d.subt.map(s => SUBT[s] || s.replace(/_/g, ' ')).join(', ')) + '</b>' + (d.ext && d.ext.length ? ' (' + esc(d.ext.join(', ')) + ')' : '') + '</span>');
+    if (d.qn) f.push('<span>Questions <b>' + esc(d.qn) + '</b></span>');
+    if (d.tl) f.push('<span>Time limit <b>' + esc(d.tl) + ' min</b></span>');
+    if (d.att != null) f.push('<span>Attempts <b>' + (d.att === -1 ? 'unlimited' : esc(d.att)) + '</b></span>');
+    f.push('<span>Your estimate <b>' + esc(fmtH(estOf(i, state.prefs))) + '</b></span>');
+    return '<div class="facts">' + f.join('') + '</div>';
+  }
+
+  function convoHtml(id) {
+    const h = T.help[id]; const live = T.live[id];
+    let out = '';
+    const turns = (h && h.turns) || [];
+    for (const t of turns) out += t.role === 'assistant' ? '<div class="ai">' + md(t.content) + '</div>' : '<div class="you">' + esc(t.content) + '</div>';
+    if (live && live.pendingQ) out += '<div class="you">' + esc(live.pendingQ) + '</div>';
+    if (live && live.busy) out += '<div class="ai" id="ai-live-' + esc(id) + '">' + (live.text ? md(live.text) : '<span class="thinking">Claude is reading the task… this can take up to a minute.</span>') + '</div>';
+    if (live && live.err) out += '<div class="ai err">' + esc(live.err) + '</div>';
+    return out ? '<div class="convo">' + out + '</div>' : '';
+  }
+
+  function attachHtml(i) {
+    const f = T.files[i.id];
+    const names = i.attn || [];
+    let rows = '';
+    if (!f || f.loading) rows = '<span class="helpnote">Checking attachments…</span>';
+    else {
+      const have = f.files || [];
+      rows = have.map(x => '<span class="pill ' + (x.text ? 'ok' : 'plain') + '" title="' + esc(x.skip || ((x.text || '').length + ' characters' + (x.tr ? ', shortened' : ''))) + '">' + (x.text ? '\u2713 ' : '') + esc(x.n) + (x.skip ? ' (' + esc(x.skip) + ')' : '') + (x.pending ? ' (reading…)' : '') + '</span>').join(' ');
+      const linked = (i.d && i.d.links || []).filter(l => /\/files\/\d+/.test(l.u) && !have.some(x => x.n === l.t));
+      if (linked.length) rows += ' ' + linked.map(l => '<span class="pill plain">' + esc(l.t) + ' (not read yet)</span>').join(' ');
+      if (!rows) rows = '<span class="helpnote">No attachments.</span>';
+    }
+    const any = f && f.files && f.files.some(x => x.text);
+    return '<div class="attbox"><div class="atthead"><b>What Claude can read</b>' + (any ? '<span class="helpnote">Task text plus these files</span>' : '<span class="helpnote">Only the task text so far</span>') + '</div>' +
+      '<div class="attlist">' + rows + '</div>' +
+      '<label class="btn small upl">Add a file for Claude<input type="file" data-upload="' + esc(i.id) + '" multiple accept=".pdf,.c,.h,.cpp,.hpp,.cc,.py,.java,.txt,.md,.s,.asm,.sh,.js,.ts,.json,.csv,.tex,.rs,.go,.sql,.yml,.yaml,.v,.vhd,.vhdl,text/*,application/pdf" hidden></label>' +
+      '<span class="helpnote"> PDF or code/text files, e.g. a file the sync couldn\u2019t read, or your own draft for feedback.</span>' +
+      (T.upMsg[i.id] ? '<div class="helpnote" role="status" style="margin-top:4px">' + esc(T.upMsg[i.id]) + '</div>' : '') + '</div>';
+  }
+
+  function taskHtml(i) {
+    const d = i.d; const done = isDone(i, state.prefs); const live = T.live[i.id] || {};
+    const hasConvo = !!(T.help[i.id] && T.help[i.id].turns && T.help[i.id].turns.length);
+    const avail = T.sample !== null;
+    const body = '<div class="tbody">' + factsHtml(i) +
+      (d && d.text ? '<div class="desc">' + esc(d.text) + '</div>' : '<div class="helpnote">' + (d ? 'This task has no written description on Canvas. The details are probably in a linked file or the lecture.' : 'The full description hasn’t been synced yet. Run a sync to load it; Claude can still help from the title.') + '</div>') +
+      (d && d.links && d.links.length ? '<div class="tlinks"><span class="muted">Linked:</span>' + d.links.map(l => '<a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.t) + '</a>').join('') + '</div>' : '') +
+      attachHtml(i) +
+      (d && d.rub && d.rub.length ? '<div class="rubric"><table><thead><tr><th>Rubric criterion</th><th>Points</th></tr></thead><tbody>' + d.rub.map(r => '<tr><td>' + esc(r.d) + (r.l ? '<div class="muted" style="font-size:12px">' + esc(r.l) + '</div>' : '') + '</td><td class="mono">' + esc(r.p) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+      '<div class="helpbar">' +
+        (avail ? '<button class="btn primary small" type="button" data-ask="explain" data-id="' + esc(i.id) + '"' + (live.busy ? ' disabled' : '') + '>Explain in detail</button>' +
+                 '<button class="btn small" type="button" data-ask="start" data-id="' + esc(i.id) + '"' + (live.busy ? ' disabled' : '') + '>' + (i.t === 'quiz' ? 'Help me prepare' : 'Help me start') + '</button>' : ('<button class="btn primary small" type="button" data-copyp="explain" data-id="' + esc(i.id) + '">Copy prompt: explain</button>' +
+      '<button class="btn small" type="button" data-copyp="start" data-id="' + esc(i.id) + '">' + (i.t === 'quiz' ? 'Copy prompt: help me prepare' : 'Copy prompt: help me start') + '</button>' +
+      '<a class="btn small ghost" href="https://claude.ai/new" target="_blank" rel="noopener" style="text-decoration:none">Open Claude</a>')) +
+      (T.copyMsg && T.copyMsg[i.id] ? '<div class="helpnote" role="status" style="width:100%">' + esc(T.copyMsg[i.id].msg) + '</div>' + (T.copyMsg[i.id].text ? '<textarea class="copyfallback" readonly aria-label="Prompt for Claude">' + esc(T.copyMsg[i.id].text) + '</textarea>' : '') : '') +
+        (live.busy ? '<button class="btn small" type="button" data-stop="' + esc(i.id) + '">Stop</button>' : '') +
+        (i.url ? '<a class="btn small ghost" href="' + esc(i.url) + '" target="_blank" rel="noopener" style="text-decoration:none">Open in Canvas</a>' : '') +
+        (hasConvo && !live.busy ? '<button class="btn small ghost" type="button" data-clear="' + esc(i.id) + '">Clear answers</button>' : '') +
+      '</div>' +
+      convoHtml(i.id) +
+      (avail && (hasConvo || live.busy) ? '<form class="ask" data-follow="' + esc(i.id) + '"><input id="q-' + esc(i.id) + '" placeholder="Ask a follow-up about this task" value="' + esc(T.drafts[i.id] || '') + '" aria-label="Follow-up question"' + (live.busy ? ' disabled' : '') + '><button class="btn small" type="submit"' + (live.busy ? ' disabled' : '') + '>Ask</button></form>' : '') +
+      '</div>';
+    return '<details class="task" data-tid="' + esc(i.id) + '" style="--cc:' + cc(i.code) + '"' + (T.open.has(i.id) ? ' open' : '') + '><summary><div style="min-width:0"><div class="ttl">' + esc(i.title) + '</div><div class="meta">' + chip(i.code) +
+      '<span>' + esc(typeLabel(i.t)) + '</span>' + (i.pts ? '<span class="mono">' + esc(i.pts) + (i.pts === 1 ? ' pt' : ' pts') + '</span>' : '') +
+      (done ? '<span class="pill ok">' + (i.s && i.s.sub ? 'Submitted' : 'Done') + '</span>' : '') + (hasConvo ? '<span class="pill plain">Has Claude notes</span>' : '') + '</div></div>' +
+      '<div class="right">' + (done ? '' : statusPill(i)) + '<span class="open-hint">Details</span></div></summary>' + (T.open.has(i.id) ? body : '') + '</details>';
+  }
+
+  let lastNorm = null;
+  function renderTasks(norm, force) {
+    lastNorm = norm;
+    const allCodes = Object.keys(norm.codes).filter(c => !(state.prefs.hidden || []).includes(c) && c !== 'TIDAB').sort();
+    const sel = $('tCourse');
+    const want = '<option value="">All</option>' + allCodes.map(c => '<option' + (c === T.filter ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+    if (sel.dataset.sig !== want) { sel.innerHTML = want; sel.dataset.sig = want; }
+    const list = taskList(norm);
+    const sig = JSON.stringify([list.map(i => [i.id, i.dueMs, isDone(i, state.prefs), estOf(i, state.prefs), !!i.d]), [...T.open], Object.keys(T.help).map(k => [k, (T.help[k].turns || []).length]),
+      Object.entries(T.live).map(([k, v]) => [k, !!v.busy, v.err || '', v.pendingQ || '']), T.sample === null, keyOf(state.now),
+      [...T.open].map(k => [k, T.files[k] ? (T.files[k].loading ? 'l' : (T.files[k].files || []).map(x => x.n + (x.text || '').length).join('|')) : '-', T.upMsg[k] || ''])]);
+    if (!force && sig === T.sig) return;
+    T.sig = sig;
+    $('tasks').innerHTML = list.length ? list.map(taskHtml).join('') : '<div class="empty">No open assignments' + (T.filter ? ' in ' + esc(T.filter) : '') + '. Nice.</div>';
+  }
+
+  function buildContext(i, kind) {
+    const d = i.d || {}; const norm = lastNorm;
+    const course = norm && norm.codes[i.code] ? norm.codes[i.code].name : '';
+    const est = estOf(i, state.prefs);
+    const finishBy = est >= 2 ? fDate.format(new Date(i.dueMs - DAY)) : fDate.format(new Date(i.dueMs));
+    const facts = [
+      'Course: ' + i.code + ' ' + course,
+      'Task: ' + i.title + ' (' + typeLabel(i.t) + ')',
+      'Due: ' + fDate.format(new Date(i.dueMs)) + ' ' + fTime.format(new Date(i.dueMs)) + ' Stockholm time' + (i.dueMs < state.now ? ' (already past, the student is late)' : ''),
+      i.pts != null ? 'Points: ' + i.pts : '',
+      d.subt ? 'Hand in as: ' + d.subt.map(s => SUBT[s] || s).join(', ') + (d.ext && d.ext.length ? ' (' + d.ext.join(', ') + ')' : '') : '',
+      d.qn ? 'Quiz questions: ' + d.qn : '', d.tl ? 'Time limit: ' + d.tl + ' min' : '',
+      d.att != null ? 'Attempts allowed: ' + (d.att === -1 ? 'unlimited' : d.att) : '',
+      d.rub && d.rub.length ? 'Rubric:\n' + d.rub.map(r => '- ' + r.d + ' (' + r.p + ' pts)' + (r.l ? ': ' + r.l : '')).join('\n') : '',
+    ].filter(Boolean).join('\n');
+    const fset = (T.files[i.id] && T.files[i.id].files) || [];
+    const readable = fset.filter(x => x.text);
+    const unread = (d.links || []).filter(l => !readable.some(x => x.n === l.t)).map(l => l.t);
+    let budget = 90000;
+    const attText = readable.map(x => { const t = x.text.slice(0, Math.max(0, budget)); budget -= t.length; return t ? '=== ' + x.n + (x.k === 'upload' ? ' (added by the student)' : x.k === 'page' ? ' (Canvas page)' : '') + (x.tr || t.length < x.text.length ? ' [shortened]' : '') + ' ===\n' + t : ''; }).filter(Boolean).join('\n\n');
+    const desc = i.d ? (d.text || '(Canvas has no written description for this task.)') : '(The description has not been synced; only the title above is known. Say so briefly, then help as well as you can from the title and course.)';
+    void desc;
+    const ask = kind === 'explain'
+      ? 'Explain this task to me in detail:\n1. What it asks for, in plain words.\n2. Exactly what I must hand in, and in what format.\n3. The concepts it tests, each explained briefly with a small example.\n4. How it is likely graded, and common mistakes to avoid.\n5. Anything unclear that I should check in the linked material or ask the teacher.'
+      : i.t === 'quiz'
+        ? 'Help me prepare for this quiz right now:\n1. The topics it most likely covers and what to review for each.\n2. The key facts, definitions and formulas to know.\n3. Five practice questions in the same style, with short answers (not the real quiz questions).\n4. A study plan that fits about ' + fmtH(est) + ' and is done before the deadline.'
+        : 'Help me get started on this right now:\n1. A step-by-step plan split into work sessions that fits about ' + fmtH(est) + ' and is finished by ' + finishBy + ', saying what to do in each session.\n2. My first 45-minute session in detail: what to open or read, what to set up, and the first concrete steps.\n3. A skeleton or outline of what I hand in (structure and headings, not finished answers).\n4. A short checklist to run before submitting.';
+    return 'You are a study coach helping a KTH computer engineering student (programme TIDAB). Today is ' + fDate.format(new Date(state.now)) + ', Stockholm time. ' +
+      'Their target in this course is grade ' + ((state.prefs.targets || {})[i.code] || 'E') + ' on KTH’s A–F scale, and they have about ' + (state.prefs.hours || 8) + ' hours a week for study.\n\n' +
+      facts + '\n\nCanvas description (it may be in Swedish):\n"""\n' + desc + '\n"""\n\n' +
+      (attText ? 'Full text of the attached files (extracted from PDF and code files, so layout and figures are lost). Treat these as the real task. Base your answer on them and refer to their exercise and question numbers:\n"""\n' + attText + '\n"""\n\n' : '') +
+      (unread.length ? 'Linked but not available to you: ' + unread.join('; ') + '. If they matter, say so and suggest adding them with "Add a file for Claude".\n\n' : '') +
+      ask + '\n\n' +
+      'Rules: Answer in English and give Swedish terms in brackets where the task uses them. Be specific to this task, not generic. If something depends on a linked file or lecture you cannot see, say what to look for there. ' +
+      'Teach the concepts and the approach, and use worked examples on similar problems, but do not write the graded answer or solution itself: KTH counts handing in work you did not do yourself as cheating. Use short Markdown headings and bullet points.';
+  }
+
+  const ERRS = { not_granted: 'Claude isn’t allowed on this page. You can allow it from the page’s Permissions menu.', sampling_disabled: 'Claude isn’t available for your account here.', rate_limited: 'You’ve hit a usage limit. Try again in a little while.', session_expired: 'Your claude.ai session expired. Sign in again and retry.', refused: 'Claude declined to answer that. Try rephrasing the question.', prompt_too_large: 'This task is too long to send in one go.', empty_completion: 'Claude returned an empty answer. Try again.', upstream_error: 'The answer was interrupted. Try again.' };
+
+  async function askClaude(id, kind, question) {
+    const i = lastNorm && lastNorm.items.find(x => x.id === id); if (!i) return;
+    if (T.sample === undefined) T.sample = await window.claude.use('sample').catch(() => null);
+    await ensureFiles(id);
+    if (!T.sample) { T.live[id] = { err: 'Claude help isn’t available in this view.' }; renderTasks(lastNorm, true); return; }
+    const prev = (T.help[id] && T.help[id].turns) || [];
+    let base = kind === 'follow' ? prev.slice(-10) : [];
+    if (base.length && base[0].role !== 'assistant') base = base.slice(1);
+    const ctxKind = kind === 'follow' ? ((T.help[id] && T.help[id].kind) || 'explain') : kind;
+    const input = kind === 'follow'
+      ? [{ role: 'user', content: buildContext(i, ctxKind) }, ...base, { role: 'user', content: question }]
+      : buildContext(i, kind);
+    const ctl = new AbortController();
+    T.live[id] = { busy: true, text: '', ctl, pendingQ: kind === 'follow' ? question : '' };
+    renderTasks(lastNorm, true);
+    let raf = 0;
+    try {
+      const res = await T.sample(input, { signal: ctl.signal, modelTier: 'default', cache: kind === 'follow' ? false : undefined,
+        onText: ({ text }) => { T.live[id].text = text; if (!raf) raf = requestAnimationFrame(() => { raf = 0; const el = document.getElementById('ai-live-' + id); if (el) el.innerHTML = md(T.live[id].text); }); } });
+      const label = kind === 'explain' ? 'Explain in detail' : kind === 'start' ? (i.t === 'quiz' ? 'Help me prepare' : 'Help me start') : question;
+      const turns = kind === 'follow' ? prev.concat([{ role: 'user', content: question }, { role: 'assistant', content: res.text }]) : [{ role: 'assistant', content: res.text }];
+      const doc = { kind: ctxKind, label, turns: turns.slice(-12), updatedAt: new Date().toISOString() };
+      if (res.truncated) doc.turns[doc.turns.length - 1].content += '\n\n*(Answer cut short. Ask a follow-up to continue.)*';
+      T.help[id] = doc;
+      if (kind !== 'follow' && prev.length) {} // a fresh explain/start replaces earlier notes
+      T.live[id] = {};
+      if (state.db) state.db.collection('help').doc(id).set(doc).catch(() => {});
+    } catch (e) {
+      const keep = e && e.text;
+      T.live[id] = e && e.code === 'cancelled' ? {} : { err: ERRS[e && e.code] || ERRS.upstream_error };
+      if (keep && e.code === 'cancelled') { const turns = kind === 'follow' ? prev.concat([{ role: 'user', content: question }, { role: 'assistant', content: keep + '\n\n*(Stopped.)*' }]) : [{ role: 'assistant', content: keep + '\n\n*(Stopped.)*' }]; T.help[id] = { kind: ctxKind, turns }; }
+      if (e && (e.code === 'not_granted' || e.code === 'sampling_disabled')) T.sample = null;
+    }
+    if (kind === 'follow') T.drafts[id] = '';
+    renderTasks(lastNorm, true);
+  }
+
+  T.copyMsg = {};
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copyp]'); if (!b) return;
+    const id = b.dataset.id, kind = b.dataset.copyp;
+    const i = lastNorm && lastNorm.items.find(x => x.id === id); if (!i) return;
+    const f = T.files[id];
+    if (f && f.files && f.files.some(x => x.pending)) { T.copyMsg[id] = { msg: 'Still reading the attachments. Try again in a few seconds.' }; renderTasks(lastNorm, true); return; }
+    const text = buildContext(i, kind);
+    const done = () => { T.copyMsg[id] = { msg: 'Copied. Open Claude and paste it into a new chat.' }; renderTasks(lastNorm, true); };
+    const fallback = () => { T.copyMsg[id] = { msg: 'Copy didn\u2019t work here. Select all the text below, copy it, and paste it into Claude.', text }; renderTasks(lastNorm, true); };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+  });
+  document.addEventListener('toggle', e => {
+    const d = e.target; if (!d.matches || !d.matches('details.task')) return;
+    const id = d.dataset.tid; const was = T.open.has(id);
+    if (d.open) { T.open.add(id); ensureFiles(id); } else T.open.delete(id);
+    if (was !== d.open && lastNorm) renderTasks(lastNorm, true);
+  }, true);
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-ask],[data-stop],[data-clear],[data-help]'); if (!t) return;
+    if (t.dataset.ask) askClaude(t.dataset.id, t.dataset.ask);
+    else if (t.dataset.stop) { const l = T.live[t.dataset.stop]; if (l && l.ctl) l.ctl.abort(); }
+    else if (t.dataset.clear) {
+      if (t.dataset.armed !== '1') { t.dataset.armed = '1'; t.textContent = 'Click again to clear'; setTimeout(() => { if (t.isConnected) { t.dataset.armed = ''; t.textContent = 'Clear answers'; } }, 4000); return; }
+      delete T.help[t.dataset.clear]; T.live[t.dataset.clear] = {};
+      if (state.db) state.db.collection('help').doc(t.dataset.clear).delete().catch(() => {});
+      renderTasks(lastNorm, true);
+    } else if (t.dataset.help) {
+      T.filter = ''; T.open.add(t.dataset.help); ensureFiles(t.dataset.help); renderTasks(lastNorm, true);
+      const el = document.querySelector('details.task[data-tid="' + CSS.escape(t.dataset.help) + '"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+  document.addEventListener('submit', e => {
+    const f = e.target.closest('form[data-follow]'); if (!f) return;
+    e.preventDefault();
+    const id = f.dataset.follow; const inp = f.querySelector('input'); const q = inp.value.trim(); if (!q) return;
+    T.drafts[id] = q; askClaude(id, 'follow', q);
+  });
+  document.addEventListener('change', e => { const id = e.target.dataset && e.target.dataset.upload; if (id && e.target.files && e.target.files.length) { const fl = [...e.target.files]; e.target.value = ''; addUploads(id, fl); } });
+  document.addEventListener('input', e => { const m = e.target.id && e.target.id.match(/^q-(.+)$/); if (m) T.drafts[m[1]] = e.target.value; });
+  $('tCourse').addEventListener('change', e => { T.filter = e.target.value; renderTasks(lastNorm, true); });
+  $('tDone').addEventListener('change', e => { T.showDone = e.target.checked; renderTasks(lastNorm, true); });
+
+  // ---------- writes ----------
+  let prefsTimer = null, writing = Promise.resolve();
+  function savePrefs() {
+    render();
+    if (!state.db) return;
+    clearTimeout(prefsTimer);
+    prefsTimer = setTimeout(() => {
+      prefsTimer = null;
+      const body = JSON.parse(JSON.stringify(state.prefs));
+      writing = writing.then(() => state.db.doc('prefs/main').set(body)).catch(e => showBanner('Couldn’t save your change (' + (e && e.code || 'error') + '). It will be lost when you reload.'));
+    }, 600);
+  }
+  function showBanner(t) { $('banner').innerHTML = t ? '<div class="banner" role="alert">' + esc(t) + '</div>' : ''; }
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-done],[data-del],#openSync,#jumpAdd,#copyScript,#copyBm,#saveSync');
+    if (!t) return;
+    if (t.dataset.done) { state.prefs.done = { ...(state.prefs.done || {}), [t.dataset.done]: true }; savePrefs(); return; }
+    if (t.dataset.del) {
+      if (t.dataset.armed !== '1') { t.dataset.armed = '1'; t.textContent = 'Click again to remove'; setTimeout(() => { if (t.isConnected) { t.dataset.armed = ''; t.textContent = 'Remove'; } }, 4000); return; }
+      if (state.db) state.db.collection('extras').doc(t.dataset.del).delete().catch(() => showBanner('Couldn’t remove that item. Try again.'));
+      return;
+    }
+    if (t.id === 'openSync') { window.SD.syncNow(); return; }
+    if (t.id === 'jumpAdd') { $('addPanel').open = true; $('addPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => $('fTitle').focus(), 300); return; }
+    if (t.id === 'copyScript' || t.id === 'copyBm') {
+      const src = $('syncsrc').textContent.trim();
+      const text = t.id === 'copyBm' ? 'javascript:' + encodeURIComponent(src) : src;
+      const label = t.textContent;
+      navigator.clipboard.writeText(text).then(() => { t.textContent = 'Copied'; setTimeout(() => t.textContent = label, 2000); })
+        .catch(() => { const fb = $('scriptFallback'); fb.hidden = false; fb.value = text; fb.focus(); fb.select(); t.textContent = 'Select all and copy below'; });
+      return;
+    }
+    if (t.id === 'saveSync') saveSync();
+  });
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset.tick) { const d = { ...(state.prefs.done || {}) }; if (t.checked) d[t.dataset.tick] = true; else delete d[t.dataset.tick]; state.prefs.done = d; savePrefs(); }
+    else if (t.dataset.est) { state.prefs.est = { ...(state.prefs.est || {}), [t.dataset.est]: Number(t.value) }; savePrefs(); }
+    else if (t.dataset.target) { state.prefs.targets = { ...(state.prefs.targets || {}), [t.dataset.target]: t.value }; savePrefs(); }
+    else if (t.dataset.vis) { const h = new Set(state.prefs.hidden || []); if (t.checked) h.delete(t.dataset.vis); else h.add(t.dataset.vis); state.prefs.hidden = [...h]; savePrefs(); }
+    else if (t.id === 'hours') { const v = Math.max(1, Math.min(60, Number(t.value) || 8)); state.prefs.hours = v; savePrefs(); }
+  });
+
+  function saveSync() {
+    const msg = $('syncMsg'); const raw = $('pasteBox').value.trim();
+    msg.className = 'msg';
+    if (!raw) { msg.className = 'msg err'; msg.textContent = 'Paste the data from the Canvas box first.'; return; }
+    let obj; try { obj = JSON.parse(raw); } catch (e) { msg.className = 'msg err'; msg.textContent = 'That isn’t the sync data. Click Copy in the box on Canvas, then paste again.'; return; }
+    if (!obj || obj.v !== 1 || !Array.isArray(obj.items) || !Array.isArray(obj.courses)) { msg.className = 'msg err'; msg.textContent = 'That text is not from the Study Desk sync script. Run the script on canvas.kth.se and copy again.'; return; }
+    if (!state.db) { msg.className = 'msg err'; msg.textContent = 'Saving isn’t available here. Open this page on claude.ai while signed in.'; return; }
+    const fileDocs = obj.items.filter(i => Array.isArray(i.att) && i.att.length).map(i => ({ id: i.id, files: i.att }));
+    const snap = { ...obj, items: obj.items.map(i => { if (!i.att) return i; const { att, ...rest } = i; return { ...rest, attn: att.map(a => a.n) }; }) };
+    if (JSON.stringify(snap).length > 250000) { msg.className = 'msg err'; msg.textContent = 'The sync data is too large to save (over 250 KB). Ask Claude to shorten the sync window.'; return; }
+    msg.textContent = 'Saving…';
+    (async () => {
+      await state.db.doc('canvas/snapshot').set(snap);
+      let nAtt = 0;
+      for (const f of fileDocs) {
+        const prev = await state.db.doc('files/' + f.id).get().catch(() => null);
+        const uploads = prev && prev.exists ? ((prev.data().files || []).filter(x => x.k === 'upload' && !f.files.some(y => y.n === x.n))) : [];
+        let files = f.files.concat(uploads);
+        while (JSON.stringify(files).length > 240000 && files.some(x => x.text && x.text.length > 2000)) { const big = files.reduce((a, b) => ((b.text || '').length > (a.text || '').length ? b : a)); big.text = big.text.slice(0, Math.floor(big.text.length * 0.7)); big.tr = true; }
+        await state.db.doc('files/' + f.id).set({ files, updatedAt: new Date().toISOString() });
+        T.files[f.id] = { files };
+        nAtt += f.files.filter(x => x.text).length;
+      }
+      msg.className = 'msg good'; msg.textContent = 'Synced ' + obj.items.filter(i => i.t !== 'announcement').length + ' items and ' + nAtt + ' attachments from ' + obj.courses.length + ' Canvas course pages.';
+      $('pasteBox').value = '';
+      if (lastNorm) renderTasks(lastNorm, true);
+    })().catch(e => { msg.className = 'msg err'; msg.textContent = 'Couldn\u2019t save the sync (' + (e && e.code || 'error') + '). Try again in a minute.'; });
+  }
+
+  $('addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const msg = $('addMsg'); msg.className = 'msg';
+    if (!state.db) { msg.className = 'msg err'; msg.textContent = 'Saving isn’t available here. Open this page on claude.ai while signed in.'; return; }
+    let code = $('fCourse').value; if (code === 'OTHER') code = 'Other';
+    const date = $('fDate').value, time = $('fTime').value || '08:00';
+    const title = $('fTitle').value.trim();
+    if (!title || !date) { msg.className = 'msg err'; msg.textContent = 'Fill in what it is and the date.'; return; }
+    const due = stockholmToIso(date, time);
+    const body = { code, title, due, kind: $('fKind').value, prep: Math.max(0, Number($('fPrep').value) || 0), addedAt: new Date().toISOString() };
+    state.db.collection('extras').add(body).then(() => { msg.className = 'msg good'; msg.textContent = 'Added. It’s now in your plan and countdowns.'; $('fTitle').value = ''; })
+      .catch(err => { msg.className = 'msg err'; msg.textContent = 'Couldn’t add it (' + (err && err.code || 'error') + '). Try again.'; });
+  });
+  // Convert a Stockholm wall-clock date+time to an ISO instant.
+  function stockholmToIso(date, time) {
+    const guess = Date.parse(date + 'T' + time + ':00Z');
+    for (const off of [1, 2]) { const ms = guess - off * 36e5; if (keyOf(ms) === date && fTime.format(new Date(ms)) === time) return new Date(ms).toISOString(); }
+    return new Date(guess - 36e5).toISOString();
+  }
+
+  // ---------- data ----------
+  renderWhen();
+  const loadTimer = setTimeout(() => { if (state.snap === undefined && window.SD && window.SD.signedIn) { $('stamp').textContent = 'Can’t reach your saved data yet'; showBanner('Your saved Canvas data hasn’t loaded. Check your connection; the page keeps trying.'); } }, 10000);
+  (async () => {
+    const use = window.claude && window.claude.use;
+    const db = use ? await window.claude.use('db') : null;
+    if (!db) {
+      clearTimeout(loadTimer);
+      $('stamp').textContent = 'Saved data unavailable';
+      showBanner('This page keeps your Canvas data in its claude.ai storage, which isn’t available in this view. Open it on claude.ai while signed in.');
+      state.snap = null; render(); return;
+    }
+    state.db = db;
+    db.doc('canvas/snapshot').onSnapshot(s => {
+      if (!s.metadata.fromCache) { clearTimeout(loadTimer); showBanner(''); }
+      state.snap = s.exists ? s.data() : (s.metadata.fromCache ? state.snap : null);
+      render();
+    }, err => { clearTimeout(loadTimer); showBanner('Couldn’t load your Canvas data (' + err.code + '). Reload the page to try again.'); });
+    db.doc('prefs/main').onSnapshot(s => {
+      if (prefsTimer) return; // a local edit is waiting to be saved
+      if (s.exists) state.prefs = { ...DEFAULT_PREFS, ...JSON.parse(JSON.stringify(s.data())) };
+      render();
+    }, () => {});
+    db.collection('help').onSnapshot(q => {
+      const next = {}; q.docs.forEach(d => { next[d.id] = d.data(); });
+      for (const k of Object.keys(T.help)) if (!(k in next) && !(T.live[k] && T.live[k].busy)) delete T.help[k];
+      for (const [k, v] of Object.entries(next)) if (!(T.live[k] && T.live[k].busy)) T.help[k] = v;
+      if (lastNorm) renderTasks(lastNorm, true);
+    }, () => {});
+    window.claude.use('sample').then(s => { T.sample = s || null; if (lastNorm) renderTasks(lastNorm, true); }).catch(() => { T.sample = null; });
+    db.collection('extras').onSnapshot(q => {
+      state.extras = q.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    }, () => {});
+  })();
+  setInterval(render, 5 * 60e3);
+})();
+</script>
