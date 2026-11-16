@@ -271,11 +271,11 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
 <div id="login" class="login" hidden>
   <div class="logincard">
     <h1>Study Desk</h1>
-    <p class="muted" id="loginText">Sign in with your email. You get a one-time login link, no password.</p>
+    <p class="muted" id="loginText">Private dashboard, linked to one KTH Canvas account. Only the owner’s email can sign in; any other address is refused.</p>
     <form id="loginForm">
       <label for="loginEmail" class="muted" style="font-size:13px">Email</label>
       <input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-      <button class="btn primary" type="submit" id="loginBtn">Send login link</button>
+      <button class="btn primary" type="submit" id="loginBtn">Send my login link</button>
     </form>
     <div class="msg" id="loginMsg" role="status"></div>
   </div>
