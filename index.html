@@ -464,7 +464,16 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
 <script id="backend">
 (function () {
   const CFG = { url: 'https://ufvckdzrfytlyptyvmsh.supabase.co', key: 'sb_publishable_wl1xU8VxNwF31hp-eAL5xw_rLFWcUpB' };
-  const sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' } });
+  // Show any startup failure on screen instead of hanging on "Loading…" (phones have no console to look at).
+  const fatal = msg => {
+    const b = document.getElementById('banner');
+    if (b) b.innerHTML = '<div class="banner" role="alert">Study Desk couldn’t start: ' + String(msg).replace(/[<>&]/g, '') + ' <button class="btn small" type="button" onclick="location.reload()">Retry</button></div>';
+  };
+  window.addEventListener('error', e => { if (!window.SD || !window.SD.signedIn) fatal(e.message || 'script error'); });
+  window.addEventListener('unhandledrejection', e => { if (!window.SD || !window.SD.signedIn) fatal((e.reason && e.reason.message) || e.reason || 'unknown error'); });
+  if (!window.supabase) { fatal('the sign-in library didn’t load. Check your connection.'); document.getElementById('login').hidden = false; return; }
+  // lock: run auth steps directly. The default browser lock can hang forever on iPhones and home-screen apps.
+  const sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'sb-ufvckdzrfytlyptyvmsh-auth-token', lock: async (name, timeout, fn) => fn() } });
   const $ = id => document.getElementById(id);
   const SD = window.SD = { sb, cfg: CFG, signedIn: false };
 
@@ -500,11 +509,12 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
         const snap = { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } };
         L.fns.forEach(f => { try { f(snap); } catch (e) { console.error(e); } });
       }
-    } catch (e) { console.warn('refresh failed', key, e); }
+    } catch (e) { console.warn('refresh failed', key, e); if (L.last === undefined && L.errs) L.errs.forEach(f => { try { f({ code: 'unavailable', message: (e && e.message) || String(e) }); } catch (x) {} }); }
   }
-  function listen(key, spec, fn) {
+  function listen(key, spec, fn, err) {
     let L = listeners.get(key);
-    if (!L) { L = { ...spec, fns: new Set(), last: undefined }; listeners.set(key, L); }
+    if (!L) { L = { ...spec, fns: new Set(), errs: new Set(), last: undefined }; listeners.set(key, L); }
+    if (err) L.errs.add(err);
     L.fns.add(fn); refresh(key, true);
     return () => L.fns.delete(fn);
   }
@@ -520,7 +530,7 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
       set: async data => { const { error } = await sb.from('docs').upsert({ collection: col, id, data, updated_at: new Date().toISOString() }); if (error) throw fail(error); after(); },
       update: async data => { const cur = await fetchDoc(col, id); if (!cur) throw { code: 'invalid_argument', message: 'missing' }; const { error } = await sb.from('docs').upsert({ collection: col, id, data: { ...cur.data, ...data }, updated_at: new Date().toISOString() }); if (error) throw fail(error); after(); },
       delete: async () => { const { error } = await sb.from('docs').delete().eq('collection', col).eq('id', id); if (error) throw fail(error); after(); },
-      onSnapshot: (fn) => listen(key, { kind: 'doc', col, id }, fn),
+      onSnapshot: (fn, err) => listen(key, { kind: 'doc', col, id }, fn, err),
       collection: () => { throw new Error('not supported'); },
     };
   }
@@ -530,7 +540,7 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
       doc: id => doc(col + '/' + (id || newId())),
       add: async data => { const r = doc(col + '/' + newId()); await r.set(data); return r; },
       get: async () => { const rows = await fetchCol(col); const docs = rows.map(r => snapDoc(r.id, r)); return { docs, size: docs.length, empty: !docs.length, docChanges: () => [] }; },
-      onSnapshot: (fn) => listen('c:' + col, { kind: 'col', col }, fn),
+      onSnapshot: (fn, err) => listen('c:' + col, { kind: 'col', col }, fn, err),
     };
   }
   const db = { doc, collection };
@@ -540,10 +550,18 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
   let resolveDb; const dbReady = new Promise(r => { resolveDb = r; });
   window.claude = { use: async name => (name === 'db' ? dbReady : null) };
   function showLogin(text) { $('login').hidden = false; if (text) $('loginText').textContent = text; }
+  const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(what + ' timed out')), ms))]);
+  let booting = false;
   async function boot() {
-    const { data: { session } } = await sb.auth.getSession();
+    if (booting) return; booting = true;
+    try { await bootInner(); }
+    catch (e) { showLogin('Couldn’t start (' + ((e && e.message) || e) + '). Sign in again, or reload the page.'); }
+    finally { booting = false; }
+  }
+  async function bootInner() {
+    const { data: { session } } = await withTimeout(sb.auth.getSession(), 10000, 'reading your saved sign-in');
     if (!session) { showLogin(); return; }
-    const { data: ok, error } = await sb.rpc('claim_owner');
+    const { data: ok, error } = await withTimeout(sb.rpc('claim_owner'), 15000, 'checking your account');
     if (error) { showLogin('Couldn\u2019t reach Study Desk. Check your connection; retrying…'); setTimeout(boot, 5000); return; }
     if (!ok) { await sb.auth.signOut(); showLogin('This Study Desk belongs to another account. Sign in with the owner\u2019s email.'); return; }
     if (location.search.includes('code=')) history.replaceState(null, '', location.pathname + location.hash);
