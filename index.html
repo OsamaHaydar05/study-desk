@@ -1091,7 +1091,7 @@ function bigItems(a, now) {
     if (!list.length) return;
     $('actionsList').innerHTML = list.map(i => {
       const d = i.d || {};
-      const when = d.noDate ? '<span class="pill plain">No deadline given</span>' : (i.dueMs - state.now < 48 * 36e5 ? '<span class="pill late">By ' + esc(relDue(i.dueMs, state.now)) + '</span>' : '<span class="pill soon">By ' + esc(relDue(i.dueMs, state.now)) + '</span>');
+      const when = d.noDate ? '<span class="pill plain">No deadline given</span>' : i.dueMs < state.now ? '<span class="pill late">Deadline passed ' + esc(fDm.format(new Date(i.dueMs))) + ', check if it’s still possible</span>' : (i.dueMs - state.now < 48 * 36e5 ? '<span class="pill late">By ' + esc(relDue(i.dueMs, state.now)) + '</span>' : '<span class="pill soon">By ' + esc(relDue(i.dueMs, state.now)) + '</span>');
       return '<div class="row"><div class="main"><div class="ttl">' + esc(i.title) + '</div>' +
         '<div class="meta">' + chip(i.code) + when + '<span>from ' + link(i.url, d.annTitle || 'announcement') + (d.posted ? ', ' + esc(fDm.format(new Date(d.posted))) : '') + '</span></div>' +
         '<div class="btns"><button class="btn small" type="button" data-done="' + esc(i.id) + '">Done</button><button class="btn small ghost" type="button" data-done="' + esc(i.id) + '">Not for me</button></div></div></div>';
