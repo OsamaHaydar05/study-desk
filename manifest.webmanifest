@@ -1,0 +1,21 @@
+{
+  "name": "Study Desk",
+  "short_name": "Study Desk",
+  "description": "Your KTH courses, deadlines, tests and schedule in one place.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0D131C",
+  "theme_color": "#2155C4",
+  "lang": "en",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Schedule", "url": "./#schedule", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}

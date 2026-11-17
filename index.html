@@ -6,6 +6,12 @@
 <meta name="theme-color" content="#EEF1F5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0D131C" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Study Desk">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon-64.png">
 <meta name="robots" content="noindex">
 <title>Study Desk HT26</title>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -292,6 +298,18 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
 .sday .none { color: var(--muted); font-size: 13px; }
 @media (max-width: 860px) { .sweek { grid-template-columns: minmax(0, 1fr); } .sday.empty { display: none; } }
 .todaylist { display: flex; flex-direction: column; gap: 8px; }
+.actions .row { grid-template-columns: minmax(0, 1fr); }
+.actions .btns { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.pass { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.pass .ph { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.pass .ph b { font-size: 13px; }
+.pass ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pass li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 2px 8px; align-items: start; font-size: 13px; }
+.pass li input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--ok); }
+.pass li .pc { font-family: var(--f-data); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.pass li .nx { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+.pass li.passed .pt { text-decoration: line-through; color: var(--muted); }
+.pass .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
 @media (prefers-reduced-motion: no-preference) { .btn, .row, .blk { transition: background-color .15s, border-color .15s, opacity .15s; } }
 </style>
 
@@ -326,6 +344,7 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
 
   <nav class="tabs" aria-label="Views"><a href="#desk" id="tabDesk" aria-current="page">Desk</a><a href="#schedule" id="tabSchedule">Schedule</a></nav>
 
+  <div class="banner" id="offlineNote" hidden>You’re offline. Showing your data from the last time you were online; it updates when you’re back.</div>
   <div id="banner"></div>
 
   <div id="viewSchedule" hidden>
@@ -378,6 +397,11 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
       <section class="panel" id="todayPanel" hidden>
         <header><h2>Today’s classes</h2><a class="aside" href="#schedule">Full schedule</a></header>
         <div class="todaylist" id="todayList"></div>
+      </section>
+
+      <section class="panel actions" id="actionsPanel" hidden>
+        <header><h2>Action needed</h2><span class="aside">Asked for in announcements</span></header>
+        <div class="list" id="actionsList"></div>
       </section>
 
       <section class="panel catch">
@@ -443,6 +467,8 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
       </div>
       <div class="sub2">Courses to show</div>
       <div class="checks" id="vis"></div>
+      <div class="sub2">Phone app</div>
+      <div id="installBox" class="muted" style="font-size:13px;max-width:70ch"></div>
       <div class="sub2">Password for signing in</div>
       <div class="form" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
         <label>New password (8+ characters)<input id="newPass" type="password" autocomplete="new-password"></label>
@@ -490,26 +516,51 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
     const { data, error } = await sb.from('docs').select(fields).eq('collection', col);
     if (error) throw fail(error); return data || [];
   }
+  const CACHE_KEY = k => 'sd-cache:' + k;
+  const saveCache = (k, v) => { try { localStorage.setItem(CACHE_KEY(k), JSON.stringify(v)); } catch (e) { /* storage full: skip */ } };
+  const readCache = k => { try { const v = localStorage.getItem(CACHE_KEY(k)); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+  SD.hasCache = () => !!readCache('d:canvas/snapshot');
+  function deliver(L, snap) { L.fns.forEach(f => { try { f(snap); } catch (e) { console.error(e); } }); }
+  function fromCache(L, key) {
+    const c = readCache(key); if (!c) return false;
+    const meta = { fromCache: true, hasPendingWrites: false };
+    if (L.kind === 'doc') deliver(L, { ...snapDoc(L.id, c.row), metadata: meta });
+    else { const docs = (c.rows || []).map(r => ({ ...snapDoc(r.id, r), metadata: meta })); deliver(L, { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: meta }); }
+    return true;
+  }
+  SD.offline = false;
+  function setOffline(on) {
+    if (SD.offline === on) return; SD.offline = on;
+    const el = document.getElementById('offlineNote');
+    if (el) el.hidden = !on;
+  }
   async function refresh(key, force) {
     const L = listeners.get(key); if (!L || !L.fns.size) return;
     try {
       if (L.kind === 'doc') {
         const head = await fetchDoc(L.col, L.id, 'updated_at');
         const sig = head ? head.updated_at : 'none';
+        setOffline(false);
         if (!force && sig === L.last) return;
+        if (L.last === 'cache') force = true;
         const row = head ? await fetchDoc(L.col, L.id) : null;
-        L.last = sig; const snap = snapDoc(L.id, row);
-        L.fns.forEach(f => { try { f(snap); } catch (e) { console.error(e); } });
+        L.last = sig; saveCache(key, { row }); deliver(L, snapDoc(L.id, row));
       } else {
         const heads = await fetchCol(L.col, 'id,updated_at');
         const sig = JSON.stringify(heads.map(r => r.id + r.updated_at).sort());
+        setOffline(false);
         if (!force && sig === L.last) return;
         const rows = heads.length ? await fetchCol(L.col) : [];
-        L.last = sig; const docs = rows.map(r => snapDoc(r.id, r));
-        const snap = { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } };
-        L.fns.forEach(f => { try { f(snap); } catch (e) { console.error(e); } });
+        L.last = sig; saveCache(key, { rows }); const docs = rows.map(r => snapDoc(r.id, r));
+        deliver(L, { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } });
       }
-    } catch (e) { console.warn('refresh failed', key, e); if (L.last === undefined && L.errs) L.errs.forEach(f => { try { f({ code: 'unavailable', message: (e && e.message) || String(e) }); } catch (x) {} }); }
+    } catch (e) {
+      console.warn('refresh failed', key, e);
+      if (L.last === undefined) {
+        if (fromCache(L, key)) { L.last = 'cache'; setOffline(true); }
+        else if (L.errs) L.errs.forEach(f => { try { f({ code: 'unavailable', message: (e && e.message) || String(e) }); } catch (x) {} });
+      } else setOffline(true);
+    }
   }
   function listen(key, spec, fn, err) {
     let L = listeners.get(key);
@@ -559,14 +610,23 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
     finally { booting = false; }
   }
   async function bootInner() {
-    const { data: { session } } = await withTimeout(sb.auth.getSession(), 10000, 'reading your saved sign-in');
-    if (!session) { showLogin(); return; }
-    const { data: ok, error } = await withTimeout(sb.rpc('claim_owner'), 15000, 'checking your account');
-    if (error) { showLogin('Couldn\u2019t reach Study Desk. Check your connection; retrying…'); setTimeout(boot, 5000); return; }
+    let session = null;
+    try { ({ data: { session } } = await withTimeout(sb.auth.getSession(), 10000, 'reading your saved sign-in')); } catch (e) { if (!SD.hasCache()) throw e; }
+    if (!session) {
+      // Offline with an expired token: still open the last synced copy instead of the sign-in screen
+      if (!navigator.onLine && SD.hasCache()) { $('login').hidden = true; setOffline(true); if (!SD.signedIn) { SD.signedIn = true; resolveDb(db); watchSync(); } return; }
+      showLogin(); return;
+    }
+    let ok = null, error = null;
+    try { ({ data: ok, error } = await withTimeout(sb.rpc('claim_owner'), 15000, 'checking your account')); } catch (e) { error = e; }
+    if (error) {
+      if (SD.hasCache()) { $('login').hidden = true; setOffline(true); if (!SD.signedIn) { SD.signedIn = true; resolveDb(db); watchSync(); } setTimeout(boot, 30000); return; }
+      showLogin('Couldn\u2019t reach Study Desk. Check your connection; retrying…'); setTimeout(boot, 5000); return;
+    }
     if (!ok) { await sb.auth.signOut(); showLogin('This Study Desk belongs to another account. Sign in with the owner\u2019s email.'); return; }
     if (location.search.includes('code=')) history.replaceState(null, '', location.pathname + location.hash);
     $('login').hidden = true;
-    if (!SD.signedIn) { SD.signedIn = true; resolveDb(db); watchSync(); }
+    if (!SD.signedIn) { SD.signedIn = true; resolveDb(db); watchSync(); } else SD.refreshAll();
   }
   sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' && !SD.signedIn) setTimeout(boot, 0); });
   try { const saved = localStorage.getItem('sd-email'); if (saved) $('loginEmail').value = saved; } catch (err) {}
@@ -602,7 +662,8 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
     if (error) { msg.className = 'msg err'; msg.textContent = 'Couldn\u2019t save it: ' + error.message; return; }
     $('newPass').value = ''; msg.className = 'msg good'; msg.textContent = 'Password saved. Sign in with your email and this password on your phone; it stays signed in after that.';
   });
-  $('signOut').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+  $('signOut').addEventListener('click', async () => { try { Object.keys(localStorage).filter(k => k.startsWith('sd-cache:')).forEach(k => localStorage.removeItem(k)); } catch (e) {} await sb.auth.signOut(); location.reload(); });
+  window.addEventListener('online', () => { if (SD.signedIn) SD.refreshAll(); });
 
   // ---- Canvas sync status ----
   let meta = null, polling = null;
@@ -705,7 +766,7 @@ function defEst(i) {
   }
   return 1;
 }
-const isTask = i => i.t !== 'announcement' && i.t !== 'wiki_page';
+const isTask = i => i.t !== 'announcement' && i.t !== 'wiki_page' && i.t !== 'action';
 function isDone(i, prefs) { return !!(prefs.done && prefs.done[i.id]) || !!i.done || !!(i.s && (i.s.sub || i.s.ex)); }
 function estOf(i, prefs) { const v = prefs.est && prefs.est[i.id]; return typeof v === 'number' ? v : defEst(i); }
 
@@ -718,7 +779,9 @@ function analyze(norm, extras, prefs, now) {
   const open = tasks.filter(i => !isDone(i, prefs) && i.dueMs >= now).sort((a, b) => a.dueMs - b.dueMs);
   const ex = (extras || []).filter(e => !hidden.has(e.code)).map(e => ({ ...e, dueMs: Date.parse(e.due) })).filter(e => !isNaN(e.dueMs));
   const notices = norm.items.filter(i => i.t === 'announcement' && (!i.code || !hidden.has(i.code)) && i.dueMs > now - 10 * DAY && i.dueMs <= now).sort((a, b) => b.dueMs - a.dueMs).slice(0, 8);
-  return { tasks, catchUp, open, extras: ex, notices };
+  const actions = norm.items.filter(i => i.t === 'action' && vis(i) && !isDone(i, prefs) && i.dueMs > now - 2 * DAY)
+    .sort((x, y) => ((x.d && x.d.noDate) ? 1 : 0) - ((y.d && y.d.noDate) ? 1 : 0) || x.dueMs - y.dueMs);
+  return { tasks, catchUp, open, extras: ex, notices, actions };
 }
 
 function buildPlan(a, prefs, now, horizon = 35) {
@@ -908,6 +971,7 @@ function bigItems(a, now) {
     renderWeek(plan);
     renderUpcoming(a);
     renderCatch(a);
+    renderActions(a);
     renderBig(a);
     renderCourses(norm, a);
     renderNotices(a);
@@ -1020,6 +1084,52 @@ function bigItems(a, now) {
     }).join('');
   }
 
+  function renderActions(a) {
+    const panel = $('actionsPanel'); if (!panel) return;
+    const list = a.actions || [];
+    panel.hidden = !list.length;
+    if (!list.length) return;
+    $('actionsList').innerHTML = list.map(i => {
+      const d = i.d || {};
+      const when = d.noDate ? '<span class="pill plain">No deadline given</span>' : (i.dueMs - state.now < 48 * 36e5 ? '<span class="pill late">By ' + esc(relDue(i.dueMs, state.now)) + '</span>' : '<span class="pill soon">By ' + esc(relDue(i.dueMs, state.now)) + '</span>');
+      return '<div class="row"><div class="main"><div class="ttl">' + esc(i.title) + '</div>' +
+        '<div class="meta">' + chip(i.code) + when + '<span>from ' + link(i.url, d.annTitle || 'announcement') + (d.posted ? ', ' + esc(fDm.format(new Date(d.posted))) : '') + '</span></div>' +
+        '<div class="btns"><button class="btn small" type="button" data-done="' + esc(i.id) + '">Done</button><button class="btn small ghost" type="button" data-done="' + esc(i.id) + '">Not for me</button></div></div></div>';
+    }).join('');
+  }
+
+  // ---- what you need to pass (examination parts from KTH course pages) ----
+  let REQ = null;
+  const PART_HINT = [
+    [/^SEM/, /seminar/i], [/^TEN|^TENA|^OMT/, /tentamen|\bexam\b|tenta/i], [/^KON|^KS/, /kontrollskrivning|\bks\d/i],
+    [/^LAB/, /\blab|laboration|assignment|uppgift/i], [/^PRO|^PRA/, /project|projekt/i], [/^INL|^ÖVN|^OVN/, /assignment|inlämning|uppgift|homework/i],
+    [/^ANN/, /assignment|quiz|seminar/i],
+  ];
+  function nextForPart(code, part, a) {
+    const hint = PART_HINT.find(([re]) => re.test(part.code));
+    const words = hint ? hint[1] : null;
+    if (!words) return null;
+    const pool = a.open.filter(i => i.code === code && (words.test(i.title) || (i.t === 'exam' && /^(SEM|TEN|KON|KS|OMT)/.test(part.code) && words.test(i.title + ' ' + ((i.d && i.d.text) || '').slice(0, 200)))));
+    return pool.sort((x, y) => x.dueMs - y.dueMs)[0] || null;
+  }
+  function passHtml(code, a) {
+    const r = REQ && REQ[code];
+    if (!r) return '';
+    if (!r.parts || !r.parts.length) return '<div class="pass"><div class="note">Couldn\u2019t read the examination parts from ' + link(r.url, 'the KTH course page') + '.</div></div>';
+    const passed = (state.prefs.passed && state.prefs.passed[code]) || {};
+    const done = r.parts.filter(p => passed[p.code]).reduce((s, p) => s + p.credits, 0);
+    const total = r.credits || r.parts.reduce((s, p) => s + p.credits, 0);
+    return '<div class="pass"><div class="ph"><b>To pass</b><span class="mono">' + esc(fmtNum(done) + ' / ' + fmtNum(total) + ' credits done') + '</span></div><ul>' +
+      r.parts.map(p => {
+        const nx = passed[p.code] ? null : nextForPart(code, p, a);
+        return '<li class="' + (passed[p.code] ? 'passed' : '') + '"><input type="checkbox" data-pass="' + esc(code + '|' + p.code) + '"' + (passed[p.code] ? ' checked' : '') + ' aria-label="Passed ' + esc(p.code) + '">' +
+          '<span class="pt"><b>' + esc(p.code) + '</b> ' + esc(p.title) + '</span><span class="pc">' + esc(fmtNum(p.credits) + ' hp · ' + (/^P,\s*F$/i.test(p.scale) ? 'pass/fail' : 'A–F')) + '</span>' +
+          (nx ? '<span class="nx">Next: ' + link(nx.url, nx.title) + ', ' + esc(nx.t === 'exam' ? noTimeText(nx, relDue(nx.dueMs, state.now)) : relDue(nx.dueMs, state.now)) + '</span>' : '') + '</li>';
+      }).join('') + '</ul>' +
+      (r.other ? '<div class="note">' + esc(r.other.slice(0, 220)) + (r.other.length > 220 ? '…' : '') + '</div>' : '') +
+      '<div class="note">From ' + link(r.url, 'the KTH course page') + '. Tick parts as you pass them; official results are in ' + link('https://www.student.ladok.se/student/app/studentwebb/', 'Ladok') + '.</div></div>';
+  }
+
   function renderCourses(norm, a) {
     const cs = courseStats(norm, a, state.prefs, state.now);
     if (!cs.length) { $('courses').innerHTML = '<div class="empty">No visible courses. Turn some on in Settings.</div>'; return; }
@@ -1039,7 +1149,7 @@ function bigItems(a, now) {
         '<div><b>' + c.open + '</b><span>open items</span></div><div><b>' + fmtNum(c.openPts) + '</b><span>points still open</span></div></div>' +
         (total ? '<div class="bar" title="Earned, lost, and still-open points"><i class="e" style="width:' + eW.toFixed(1) + '%"></i><i class="l" style="width:' + lW.toFixed(1) + '%"></i></div>' : '') +
         '<div class="lever">' + lever + '</div>' +
-        '<div style="margin-top:8px"><label>Target grade <select data-target="' + esc(c.code) + '">' + GRADES.map(g => '<option' + (g === c.target ? ' selected' : '') + '>' + g + '</option>').join('') + '</select></label></div></div>';
+        '<div style="margin-top:8px"><label>Target grade <select data-target="' + esc(c.code) + '">' + GRADES.map(g => '<option' + (g === c.target ? ' selected' : '') + '>' + g + '</option>').join('') + '</select></label></div>' + passHtml(c.code, a) + '</div>';
     }).join('');
   }
   const fmtNum = n => (Math.round(n * 10) / 10).toString();
@@ -1444,6 +1554,7 @@ function bigItems(a, now) {
     const t = e.target;
     if (t.dataset.tick) { const d = { ...(state.prefs.done || {}) }; if (t.checked) d[t.dataset.tick] = true; else delete d[t.dataset.tick]; state.prefs.done = d; savePrefs(); }
     else if (t.dataset.est) { state.prefs.est = { ...(state.prefs.est || {}), [t.dataset.est]: Number(t.value) }; savePrefs(); }
+    else if (t.dataset.pass) { const [code, part] = t.dataset.pass.split('|'); const p = JSON.parse(JSON.stringify(state.prefs.passed || {})); p[code] = p[code] || {}; if (t.checked) p[code][part] = true; else delete p[code][part]; state.prefs.passed = p; savePrefs(); }
     else if (t.dataset.target) { state.prefs.targets = { ...(state.prefs.targets || {}), [t.dataset.target]: t.value }; savePrefs(); }
     else if (t.dataset.vis) { const h = new Set(state.prefs.hidden || []); if (t.checked) h.delete(t.dataset.vis); else h.add(t.dataset.vis); state.prefs.hidden = [...h]; savePrefs(); }
     else if (t.id === 'hours') { const v = Math.max(1, Math.min(60, Number(t.value) || 8)); state.prefs.hours = v; savePrefs(); }
@@ -1528,12 +1639,30 @@ function bigItems(a, now) {
       if (lastNorm) renderTasks(lastNorm, true);
     }, () => {});
     window.claude.use('sample').then(s => { T.sample = s || null; if (lastNorm) renderTasks(lastNorm, true); }).catch(() => { T.sample = null; });
+    db.doc('canvas/requirements').onSnapshot(s => { REQ = s.exists ? (s.data().courses || {}) : null; render(); }, () => {});
     db.collection('extras').onSnapshot(q => {
       state.extras = q.docs.map(d => ({ id: d.id, ...d.data() }));
       render();
     }, () => {});
   })();
   setInterval(render, 5 * 60e3);
+
+  // ================= Phone app (install + offline) =================
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  let installEvt = null;
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  function renderInstall() {
+    const box = $('installBox'); if (!box) return;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (standalone()) { box.innerHTML = '<span class="pill ok">Installed</span> You\u2019re using the Study Desk app. It opens offline with your last synced data.'; return; }
+    if (installEvt) { box.innerHTML = '<button class="btn primary small" type="button" id="installBtn">Install Study Desk app</button> Adds an app icon to your phone; opens full screen and works offline.'; $('installBtn').onclick = async () => { installEvt.prompt(); await installEvt.userChoice.catch(() => {}); installEvt = null; renderInstall(); }; return; }
+    box.innerHTML = ios
+      ? 'On iPhone: open this page in <b>Safari</b>, tap <b>Share</b> (square with arrow) → <b>Add to Home Screen</b>. Then open Study Desk from the new icon and sign in once.'
+      : 'On Android: open this page in <b>Chrome</b>, tap <b>⋮</b> → <b>Install app</b> (or <b>Add to Home screen</b>). On a computer, use the install icon in Chrome\u2019s address bar.';
+  }
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; renderInstall(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; renderInstall(); });
+  renderInstall();
 
   // ================= Schedule (TimeEdit) =================
   const SCH = { data: undefined, weekOffset: 0 };
