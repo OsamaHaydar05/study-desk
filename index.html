@@ -1525,10 +1525,10 @@ function bigItems(a, now) {
   const isTest = ev => /Exam|Re-exam|Midterm test/.test(ev.kind || '') || /seminar/i.test(ev.kind || '') && (ev.codes || []).some(c => lastNorm && lastNorm.items.some(i => i.t === 'exam' && i.code === c && keyOf(i.dueMs) === keyOf(Date.parse(ev.s))));
   function evHtml(ev, now) {
     const s = Date.parse(ev.s), e = Date.parse(ev.e || ev.s);
-    const cls = e < now ? ' past' : s <= now && now < e ? ' now' : '';
+    const cls = e < now ? ' past' : !ev.allDay && s <= now && now < e ? ' now' : '';
     const title = (ev.title || '').replace(/\s*,\s*/g, ', ');
     return '<div class="ev' + cls + (isTest(ev) ? ' test' : '') + '" style="--cc:' + evColor(ev) + '">' +
-      '<div class="tm">' + esc(fHM.format(new Date(s)) + (ev.e ? '–' + fHM.format(new Date(e)) : '')) + (cls === ' now' ? ' · now' : '') + '</div>' +
+      '<div class="tm">' + esc(ev.allDay ? 'All day' : fHM.format(new Date(s)) + (ev.e ? '–' + fHM.format(new Date(e)) : '')) + (cls === ' now' ? ' · now' : '') + '</div>' +
       '<div>' + (ev.codes || []).slice(0, 2).map(c => chip(c)).join(' ') + (ev.kind ? ' <span class="k">' + esc(ev.kind) + '</span>' : '') + (isTest(ev) ? ' <span class="pill late">Test</span>' : '') + '</div>' +
       (ev.where ? '<div>Room <span class="room">' + esc(ev.where) + '</span></div>' : '<div class="sub">No room listed</div>') +
       '<div class="sub">' + esc(title.slice(0, 160)) + '</div></div>';
@@ -1558,7 +1558,7 @@ function bigItems(a, now) {
       return '<div class="sday' + (k === today ? ' today' : '') + (list.length ? '' : ' empty') + '"><div class="dh"><b>' + esc(k === today ? 'Today' : fWd.format(keyDate(k))) + '</b><span class="mono muted">' + esc(fDm.format(keyDate(k))) + '</span></div>' +
         (list.length ? list.map(ev => evHtml(ev, now)).join('') : '<div class="none">No classes</div>') + '</div>';
     }).join('');
-    const next = events.find(ev => Date.parse(ev.e || ev.s) > now);
+    const next = events.find(ev => !ev.allDay && Date.parse(ev.e || ev.s) > now);
     if (next) {
       const s = Date.parse(next.s), live = s <= now;
       const mins = Math.round((s - now) / 60000);
@@ -1576,7 +1576,8 @@ function bigItems(a, now) {
     const now = Date.now(), today = keyOf(now);
     let list = events.filter(ev => keyOf(Date.parse(ev.s)) === today);
     let label = 'Today’s classes';
-    if (!list.some(ev => Date.parse(ev.e || ev.s) > now)) { const tk = addDays(today, 1); const tmr = events.filter(ev => keyOf(Date.parse(ev.s)) === tk); if (tmr.length) { list = tmr; label = 'Tomorrow’s classes'; } }
+    list.sort((x, y) => (y.allDay ? 1 : 0) - (x.allDay ? 1 : 0));
+    if (!list.some(ev => !ev.allDay && Date.parse(ev.e || ev.s) > now)) { const tk = addDays(today, 1); const tmr = events.filter(ev => keyOf(Date.parse(ev.s)) === tk); if (tmr.length) { list = tmr; label = 'Tomorrow’s classes'; } }
     panel.hidden = false;
     panel.querySelector('h2').textContent = label;
     $('todayList').innerHTML = list.length ? list.map(ev => evHtml(ev, now)).join('') : '<div class="empty">No classes today.</div>';
