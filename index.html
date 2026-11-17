@@ -263,6 +263,35 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
 .logincard input { border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; background: var(--surface); font-size: 16px; }
 .syncstat { font-size: 14px; margin-bottom: 8px; }
 .copyfallback { width: 100%; height: 140px; font-family: var(--f-data); font-size: 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); padding: 8px; }
+/* View switch */
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 18px; }
+.tabs a { text-decoration: none; font-weight: 700; font-size: 14px; padding: 6px 14px; border-radius: 7px; color: var(--muted); }
+.tabs a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+/* Schedule */
+.schedhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.schedhead h2 { font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 800; }
+.schedhead .nav { display: flex; gap: 6px; }
+.nextclass { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; padding: 14px 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--cc, var(--accent)); margin-bottom: 16px; }
+.nextclass .lbl { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); grid-column: 1 / -1; }
+.nextclass .t { font-family: var(--f-data); font-size: 22px; font-weight: 600; }
+.nextclass .what { font-weight: 700; font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+.nextclass .meta { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+.sweek { display: grid; grid-template-columns: repeat(var(--ndays, 5), minmax(0, 1fr)); gap: 10px; }
+.sday { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.sday.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sday .dh { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+.sday .dh b { font-size: 14px; }
+.ev { border-left: 4px solid var(--cc, var(--muted)); background: var(--sunk); border-radius: 6px; padding: 8px 9px; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+.ev .tm { font-family: var(--f-data); font-weight: 600; font-size: 12.5px; }
+.ev .k { font-weight: 700; }
+.ev .room { font-weight: 700; color: var(--ink); }
+.ev .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.ev.past { opacity: .55; }
+.ev.now { box-shadow: inset 0 0 0 2px var(--cc, var(--accent)); }
+.ev.test { background: color-mix(in srgb, var(--late) 10%, var(--sunk)); }
+.sday .none { color: var(--muted); font-size: 13px; }
+@media (max-width: 860px) { .sweek { grid-template-columns: minmax(0, 1fr); } .sday.empty { display: none; } }
+.todaylist { display: flex; flex-direction: column; gap: 8px; }
 @media (prefers-reduced-motion: no-preference) { .btn, .row, .blk { transition: background-color .15s, border-color .15s, opacity .15s; } }
 </style>
 
@@ -295,7 +324,25 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
     </div>
   </header>
 
+  <nav class="tabs" aria-label="Views"><a href="#desk" id="tabDesk" aria-current="page">Desk</a><a href="#schedule" id="tabSchedule">Schedule</a></nav>
+
   <div id="banner"></div>
+
+  <div id="viewSchedule" hidden>
+    <div class="schedhead">
+      <h2 id="schedTitle">Schedule</h2>
+      <div class="nav">
+        <button class="btn small" type="button" id="schedPrev" aria-label="Previous week">‹ Prev</button>
+        <button class="btn small" type="button" id="schedToday">This week</button>
+        <button class="btn small" type="button" id="schedNext" aria-label="Next week">Next ›</button>
+      </div>
+    </div>
+    <div id="nextClass"></div>
+    <div class="sweek" id="sweek"></div>
+    <p class="foot" id="schedFoot"></p>
+  </div>
+
+  <div id="viewDesk">
 
   <div class="strip" id="strip" aria-label="Summary">
     <div class="late"><div class="n" id="sLate">–</div><div class="l">to catch up</div></div>
@@ -328,6 +375,11 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
     </div>
 
     <div class="col">
+      <section class="panel" id="todayPanel" hidden>
+        <header><h2>Today’s classes</h2><a class="aside" href="#schedule">Full schedule</a></header>
+        <div class="todaylist" id="todayList"></div>
+      </section>
+
       <section class="panel catch">
         <header><h2>Catch up</h2><span class="aside">Missing in the last 3 weeks</span></header>
         <div class="list" id="catch"></div>
@@ -399,6 +451,8 @@ details.task:not([open]) > summary .open-hint::after { content: " ▾"; }
       <div class="msg" id="passMsg" role="status"></div>
       <p class="muted" style="font-size:13px;margin:6px 0 0">Each device stays signed in after you sign in once. Sign out is under Canvas sync.</p>
     </details>
+  </div>
+
   </div>
 
   <p class="foot">Data comes from your KTH Canvas account and is stored in your private Supabase database, readable only after you sign in. KTH final grades are set in Ladok; the Canvas points here only show how assignments and quizzes went. Ticking an item done only changes this dashboard, not Canvas.</p>
@@ -843,6 +897,7 @@ function bigItems(a, now) {
     renderAddForm(allCodes);
     renderExtras();
     renderTasks(norm);
+    if (typeof window.__sdSchedRefresh === 'function') window.__sdSchedRefresh();
   }
 
   const fmtShort = h => (Math.round(h * 4) / 4).toString().replace(/\.25$/, '¼').replace(/\.5$/, '½').replace(/\.75$/, '¾') + ' h';
@@ -1106,7 +1161,7 @@ function bigItems(a, now) {
     const d = i.d || {}; const f = [];
     f.push('<span>Type <b>' + esc(typeLabel(i.t)) + '</b></span>');
     if (i.t === 'exam') {
-      const SRC = { page: 'a Canvas page' + (d.module ? ' (module ' + d.module + ')' : ''), calendar: 'the Canvas calendar', room: 'a KTH exam room on Canvas', announcement: 'a Canvas announcement' };
+      const SRC = { page: 'a Canvas page' + (d.module ? ' (module ' + d.module + ')' : ''), calendar: 'the Canvas calendar', room: 'a KTH exam room on Canvas', announcement: 'a Canvas announcement', timeedit: 'your TimeEdit schedule' };
       f.push('<span>Found in <b>' + esc(SRC[d.src] || 'Canvas') + '</b></span>');
       f.push('<span>When <b>' + esc(fDate.format(new Date(i.dueMs)) + (d.timeKnown === false ? ', time not stated on Canvas' : ' ' + fTime.format(new Date(i.dueMs)))) + '</b></span>');
       if (d.where) f.push('<span>Where <b>' + esc(d.where) + '</b></span>');
@@ -1461,5 +1516,86 @@ function bigItems(a, now) {
     }, () => {});
   })();
   setInterval(render, 5 * 60e3);
+
+  // ================= Schedule (TimeEdit) =================
+  const SCH = { data: undefined, weekOffset: 0 };
+  const fHM = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const fDay = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'short' });
+  const evColor = ev => { const c = (ev.codes || []).find(c => CC[c]); return c ? CC[c] : 'var(--muted)'; };
+  const isTest = ev => /Exam|Re-exam|Midterm test/.test(ev.kind || '') || /seminar/i.test(ev.kind || '') && (ev.codes || []).some(c => lastNorm && lastNorm.items.some(i => i.t === 'exam' && i.code === c && keyOf(i.dueMs) === keyOf(Date.parse(ev.s))));
+  function evHtml(ev, now) {
+    const s = Date.parse(ev.s), e = Date.parse(ev.e || ev.s);
+    const cls = e < now ? ' past' : s <= now && now < e ? ' now' : '';
+    const title = (ev.title || '').replace(/\s*,\s*/g, ', ');
+    return '<div class="ev' + cls + (isTest(ev) ? ' test' : '') + '" style="--cc:' + evColor(ev) + '">' +
+      '<div class="tm">' + esc(fHM.format(new Date(s)) + (ev.e ? '–' + fHM.format(new Date(e)) : '')) + (cls === ' now' ? ' · now' : '') + '</div>' +
+      '<div>' + (ev.codes || []).slice(0, 2).map(c => chip(c)).join(' ') + (ev.kind ? ' <span class="k">' + esc(ev.kind) + '</span>' : '') + (isTest(ev) ? ' <span class="pill late">Test</span>' : '') + '</div>' +
+      (ev.where ? '<div>Room <span class="room">' + esc(ev.where) + '</span></div>' : '<div class="sub">No room listed</div>') +
+      '<div class="sub">' + esc(title.slice(0, 160)) + '</div></div>';
+  }
+  function renderSchedule() {
+    const box = $('sweek'); if (!box) return;
+    const now = Date.now();
+    if (SCH.data === undefined) { box.innerHTML = '<div class="empty">Loading your schedule…</div>'; return; }
+    const events = (SCH.data && SCH.data.events) || [];
+    if (!events.length) {
+      $('nextClass').innerHTML = '';
+      box.style.setProperty('--ndays', 1);
+      box.innerHTML = '<div class="sday"><b>No schedule yet</b><div class="none">Your TimeEdit timetable appears here after the next sync. If it stays empty, the TimeEdit link hasn\u2019t been added: in TimeEdit open <b>Prenumerera</b>, pick <b>Rullande 4 veckor</b>, click <b>Kopiera</b>, and save it in Supabase under Edge Functions → Secrets as <code>TIMEEDIT_ICS_URL</code>.</div></div>';
+      $('schedFoot').textContent = '';
+      return;
+    }
+    const today = keyOf(now);
+    const dow = (keyDate(today).getUTCDay() + 6) % 7;
+    const monday = addDays(today, -dow + SCH.weekOffset * 7);
+    const days = Array.from({ length: 7 }, (_, n) => addDays(monday, n));
+    const byDay = {}; for (const ev of events) { const k = keyOf(Date.parse(ev.s)); (byDay[k] = byDay[k] || []).push(ev); }
+    const shown = days.filter((k, n) => n < 5 || (byDay[k] && byDay[k].length));
+    $('schedTitle').textContent = 'Vecka ' + isoWeek(monday) + ' · ' + fDm.format(keyDate(monday)) + '–' + fDm.format(keyDate(addDays(monday, 6)));
+    box.style.setProperty('--ndays', shown.length);
+    box.innerHTML = shown.map(k => {
+      const list = byDay[k] || [];
+      return '<div class="sday' + (k === today ? ' today' : '') + (list.length ? '' : ' empty') + '"><div class="dh"><b>' + esc(k === today ? 'Today' : fWd.format(keyDate(k))) + '</b><span class="mono muted">' + esc(fDm.format(keyDate(k))) + '</span></div>' +
+        (list.length ? list.map(ev => evHtml(ev, now)).join('') : '<div class="none">No classes</div>') + '</div>';
+    }).join('');
+    const next = events.find(ev => Date.parse(ev.e || ev.s) > now);
+    if (next) {
+      const s = Date.parse(next.s), live = s <= now;
+      const mins = Math.round((s - now) / 60000);
+      const inTxt = live ? 'happening now' : mins < 60 ? 'in ' + mins + ' min' : keyOf(s) === today ? 'today ' + fHM.format(new Date(s)) : keyOf(s) === addDays(today, 1) ? 'tomorrow ' + fHM.format(new Date(s)) : fDay.format(keyDate(keyOf(s))) + ' ' + fHM.format(new Date(s));
+      $('nextClass').innerHTML = '<div class="nextclass" style="--cc:' + evColor(next) + '"><span class="lbl">' + (live ? 'Now' : 'Next class') + ' · ' + esc(inTxt) + '</span>' +
+        '<span class="t">' + esc(fHM.format(new Date(s))) + '</span><span class="what">' + (next.codes || []).slice(0, 1).map(c => chip(c)).join('') + ' ' + esc(next.kind || 'Class') + '</span>' +
+        '<span class="meta">' + (next.where ? 'Room <b style="color:var(--ink)">' + esc(next.where) + '</b> · ' : '') + esc((next.title || '').slice(0, 140)) + '</span></div>';
+    } else $('nextClass').innerHTML = '';
+    $('schedFoot').textContent = 'From your TimeEdit schedule (next 4 weeks), updated with every sync' + (SCH.data.syncedAt ? ', last ' + new Date(SCH.data.syncedAt).toLocaleString('en-GB', { timeZone: TZ, dateStyle: 'medium', timeStyle: 'short' }) : '') + '. Changes made in TimeEdit show up after the next sync.';
+  }
+  function renderToday() {
+    const panel = $('todayPanel'); if (!panel) return;
+    const events = (SCH.data && SCH.data.events) || [];
+    if (!events.length) { panel.hidden = true; return; }
+    const now = Date.now(), today = keyOf(now);
+    let list = events.filter(ev => keyOf(Date.parse(ev.s)) === today);
+    let label = 'Today’s classes';
+    if (!list.some(ev => Date.parse(ev.e || ev.s) > now)) { const tk = addDays(today, 1); const tmr = events.filter(ev => keyOf(Date.parse(ev.s)) === tk); if (tmr.length) { list = tmr; label = 'Tomorrow’s classes'; } }
+    panel.hidden = false;
+    panel.querySelector('h2').textContent = label;
+    $('todayList').innerHTML = list.length ? list.map(ev => evHtml(ev, now)).join('') : '<div class="empty">No classes today.</div>';
+  }
+  function route() {
+    const sched = location.hash === '#schedule';
+    $('viewSchedule').hidden = !sched; $('viewDesk').hidden = sched;
+    $('tabSchedule').setAttribute('aria-current', sched ? 'page' : 'false'); $('tabDesk').setAttribute('aria-current', sched ? 'false' : 'page');
+    if (sched) renderSchedule();
+  }
+  window.addEventListener('hashchange', () => { route(); window.scrollTo(0, 0); });
+  $('schedPrev').addEventListener('click', () => { SCH.weekOffset = Math.max(-1, SCH.weekOffset - 1); renderSchedule(); });
+  $('schedNext').addEventListener('click', () => { SCH.weekOffset = Math.min(5, SCH.weekOffset + 1); renderSchedule(); });
+  $('schedToday').addEventListener('click', () => { SCH.weekOffset = 0; renderSchedule(); });
+  window.__sdSchedRefresh = () => { renderToday(); if (!$('viewSchedule').hidden) renderSchedule(); };
+  route();
+  window.claude.use('db').then(db => {
+    db.doc('canvas/schedule').onSnapshot(s => { SCH.data = s.exists ? s.data() : null; renderSchedule(); renderToday(); });
+  });
+  setInterval(() => { if (!$('viewSchedule').hidden) renderSchedule(); renderToday(); }, 60e3);
 })();
 </script>
